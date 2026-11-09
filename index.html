@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>winelog — i miei vini</title>
+<meta name="theme-color" content="#160f12">
+<link rel="icon" href="favicon.svg?v=1" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png?v=1" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
+<link rel="manifest" href="manifest.webmanifest?v=1">
+<style>
+  :root{
+    --bg:#160f12; --panel:#201619; --panel2:#2a1d21; --line:#3f2b32;
+    --txt:#f5ecee; --dim:#b89aa3; --acc:#e0566f; --ok:#3ddc97; --warn:#ffb95e;
+    --plan:#b98cff; --drop:#ff8a4c; --epic:#ffd84d; --r:14px;
+  }
+  :root{color-scheme:dark}
+  select option{background:var(--panel2); color:var(--txt)}
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--txt);
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
+  }
+  header{
+    position:sticky; top:0; z-index:30; background:rgba(22,15,18,.96);
+    backdrop-filter:blur(8px); border-bottom:1px solid var(--line); padding:10px 14px;
+  }
+  .hrow{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  h1{font-size:17px; margin:0; font-weight:650; letter-spacing:-.2px; white-space:nowrap}
+  .stats{color:var(--dim); font-size:12.5px; margin-left:auto}
+  #avvisoLoc{background:rgba(255,138,76,.13); border:1px solid rgba(255,138,76,.45);
+             color:var(--drop); font-size:12px; padding:4px 10px; border-radius:99px;
+             cursor:pointer; white-space:nowrap}
+  #avvisoLoc:hover{background:rgba(255,138,76,.22)}
+  input,select,textarea,button{font:inherit; color:inherit}
+  .fld{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:8px 11px; outline:none; min-width:0}
+  .fld:focus{border-color:var(--acc)}
+  #q{flex:1 1 170px}
+  .btn{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:8px 12px; cursor:pointer; white-space:nowrap}
+  .btn:hover{background:#38262c}
+  .btn.p{background:var(--acc); border-color:var(--acc); color:#2b0a12; font-weight:600}
+  .btn.p:hover{filter:brightness(1.08)}
+  .btn.sm{padding:4px 9px; font-size:12.5px; border-radius:8px}
+  .btn.gh{background:transparent}
+  .tools{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; align-items:center}
+  .tools .sp{margin-left:auto}
+
+  main{padding:14px; display:grid; gap:14px; align-items:start;
+       grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  @media (min-width:1100px){ main{grid-template-columns:1fr 1fr 1fr} }
+
+  /* ---- pagina di benvenuto ---- */
+  #benvenuto{padding:26px 16px 10px; min-height:70vh}
+  #collage{position:fixed; inset:-12% -8%; z-index:0; pointer-events:none;
+           display:grid; grid-template-columns:repeat(10,1fr); gap:10px; align-content:start;
+           transform:rotate(-7deg); opacity:0; transition:opacity 1.4s ease}
+  #collage.on{opacity:1}
+  #collage .tile{width:100%; aspect-ratio:2/3; border-radius:8px; filter:saturate(.8) brightness(.7)}
+  #collage img{width:100%; aspect-ratio:2/3; object-fit:cover; border-radius:8px;
+               filter:saturate(.8) brightness(.7)}
+  #collage img:nth-child(odd), #collage .tile:nth-child(odd){transform:translateY(40%)}
+  #velo{position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:linear-gradient(180deg, rgba(22,15,18,.45) 0%, rgba(22,15,18,.84) 45%, var(--bg) 100%)}
+  body.dentro #velo{background:rgba(22,15,18,.8)}
+  body.dentro #collage img, body.dentro #collage .tile{filter:saturate(.6) brightness(.5)}
+  @media (max-width:640px){ #collage{grid-template-columns:repeat(5,1fr); gap:7px} }
+  #benvenuto,#tabBar,#ordMobWrap,main,footer{position:relative; z-index:1}
+  .bw{max-width:760px; margin:0 auto}
+  .bw h2{font-size:25px; margin:0 0 10px; letter-spacing:-.4px}
+  .occhiello{color:var(--dim); font-size:15px; margin:0 0 22px; line-height:1.55}
+  .bgrid{display:grid; gap:12px; grid-template-columns:repeat(4,1fr)}
+  @media (max-width:900px){ .bgrid{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:640px){ .bgrid{grid-template-columns:1fr} }
+  .bgrid>div{background:var(--panel); border:1px solid var(--line); border-radius:var(--r);
+             padding:13px 15px; font-size:13.4px; color:var(--dim); line-height:1.5}
+  .bgrid b{display:block; color:var(--txt); font-size:14px; margin-bottom:5px}
+  .bact{display:flex; gap:10px; margin:22px 0 0; flex-wrap:wrap}
+  .bpriv{color:#8f7680; font-size:12.3px; line-height:1.6; margin:20px 0 0;
+         border-top:1px solid var(--line); padding-top:14px}
+
+  /* ---- linguette: solo su schermo stretto ---- */
+  #tabBar{display:none}
+  #ordMobWrap{display:none}
+  .sec2{display:none}
+  @media (max-width:640px), (max-height:520px) and (orientation:landscape){
+    main{grid-template-columns:1fr; padding:10px}
+    header{padding:8px 10px}
+    .sec2{display:inline-block}
+    .tools .sec{display:none}
+    .tools.aperta .sec{display:inline-block}
+    .tools.aperta{padding-bottom:2px}
+    #q{flex:1 1 55%; min-width:55%}
+    #fvoto{flex:0 1 auto; max-width:42%}
+    #bAdd{order:1} .sec2{order:2} #q{order:3} #fvoto{order:4}
+    .tools .sp{display:none}
+    .tools .sec{order:6}
+    .modal .rowf{flex-wrap:wrap}
+    #sq{flex:1 1 100%}
+    #prov{flex:1 1 auto; max-width:none}
+    #tabBar{display:flex; gap:6px; padding:8px 10px 0; overflow-x:auto}
+    #tabBar button{flex:1 0 auto; background:var(--panel); border:1px solid var(--line);
+      color:var(--dim); border-radius:10px; padding:8px 10px; font-size:12.5px; cursor:pointer;
+      white-space:nowrap; display:flex; align-items:center; gap:5px; justify-content:center}
+    #tabBar button.on{background:var(--panel2); color:var(--txt); border-color:#5a3b45; font-weight:600}
+    #ordMobWrap{display:block; padding:6px 10px 0}
+    #ordMob{display:block; width:100%; background:var(--panel); color:var(--dim);
+      border:1px solid var(--line); border-radius:10px; padding:7px 10px; font-size:12.5px}
+    #tabBar .pal{width:7px; height:7px; border-radius:50%; flex:none}
+    main>section.col{display:none}
+    main>section.col.attiva{display:block}
+    header{transition:transform .22s ease}
+    body.giu header{transform:translateY(-100%)}
+    #tabBar{position:sticky; top:0; z-index:25; padding-bottom:8px;
+            background:rgba(22,15,18,.96); backdrop-filter:blur(8px);
+            border-bottom:1px solid var(--line)}
+    main>section.col .chd{display:none}
+    main>section.col .clist{display:flex !important}
+    .bw h2{font-size:21px}
+  }
+  section.col{background:var(--panel); border:1px solid var(--line); border-radius:var(--r); overflow:hidden}
+  .chd{display:flex; align-items:center; gap:8px; padding:11px 13px; border-bottom:1px solid var(--line); cursor:pointer; user-select:none}
+  .dot{width:9px; height:9px; border-radius:50%; flex:none}
+  .chd b{font-size:13.5px; font-weight:650; letter-spacing:.2px; text-transform:uppercase}
+  .cnt{margin-left:8px; color:var(--dim); font-size:12.5px; font-variant-numeric:tabular-nums}
+  .chd select.ordcol{margin-left:auto; max-width:48%; background:var(--panel); color:var(--dim);
+    border:1px solid var(--line); border-radius:7px; padding:2px 5px; font-size:11.5px; cursor:pointer}
+  .chd select.ordcol:hover{color:var(--txt); border-color:#5a3b45}
+  .caret{color:var(--dim); font-size:11px; transition:transform .15s}
+  section.col.closed .caret{transform:rotate(-90deg)}
+  section.col.closed .clist{display:none}
+  .clist{padding:9px; display:flex; flex-direction:column; gap:8px; min-height:44px}
+  .empty{color:var(--dim); font-size:13px; padding:10px 6px; text-align:center}
+
+  /* ---- scheda album ---- */
+  .card{background:var(--panel2); border:1px solid var(--line); border-left:4px solid var(--line);
+        border-radius:11px; padding:9px 9px 9px 8px; position:relative}
+  .card.st-done{background:linear-gradient(90deg,rgba(61,220,151,.09),rgba(61,220,151,0) 190px);
+                border-color:rgba(61,220,151,.28);  border-left-color:var(--ok)}
+  .card.st-plan{background:linear-gradient(90deg,rgba(185,140,255,.10),rgba(185,140,255,0) 190px);
+                border-color:rgba(185,140,255,.26); border-left-color:var(--plan)}
+  .card.epic{border-color:var(--epic); box-shadow:0 0 14px rgba(255,216,77,.16)}
+  .top{display:flex; gap:10px}
+  .del{position:absolute; top:4px; right:4px; width:22px; height:22px; padding:0; line-height:1;
+    border:0; background:transparent; color:#86717a; cursor:pointer; border-radius:6px; font-size:13px; opacity:.55}
+  .del:hover{background:#4a2020; color:#ff9b9b; opacity:1}
+  .info{padding:4px 9px; font-size:12.5px; border-radius:8px; border:1px solid var(--line);
+    background:transparent; color:var(--dim); text-decoration:none; white-space:nowrap}
+  .info:hover{background:#38262c; color:var(--acc); border-color:var(--acc)}
+  .pos{width:50px; height:74px; border-radius:6px; flex:none; background:#372a2e; object-fit:cover; display:block}
+  .ph{display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; font-size:22px}
+  .body{flex:1; min-width:0}
+  .art{color:var(--dim); font-size:12.5px; font-weight:500; padding-right:20px; overflow-wrap:anywhere}
+  .ttl{font-weight:600; font-size:14.2px; line-height:1.25; overflow-wrap:anywhere; padding-right:20px}
+  .yr{color:var(--dim); font-weight:400; font-size:12.5px}
+  .meta{color:var(--dim); font-size:12.3px; margin-top:3px; font-variant-numeric:tabular-nums}
+  .acts{display:flex; gap:5px; margin-top:7px; flex-wrap:wrap}
+  .note{color:var(--warn); font-size:12.3px; margin-top:5px; font-style:italic; overflow-wrap:anywhere}
+  /* voto: stelle in ordine inverso nel codice, così il passaggio del mouse
+     su una illumina anche quelle alla sua sinistra */
+  .rate{display:inline-flex; flex-direction:row-reverse; vertical-align:-1px; white-space:nowrap}
+  .rate b{color:var(--warn); font-weight:400; font-size:13px; line-height:1; cursor:pointer; padding:0 1px}
+  .rate b.off{opacity:.22}
+  .rate b:hover, .rate b:hover ~ b{opacity:1}
+  .rate b.plus{font-size:12.5px; font-weight:700; padding-left:2px}
+  .rate.epic b{color:var(--epic); text-shadow:0 0 7px rgba(255,216,77,.45)}
+  .rate.sm b{font-size:12px}
+  .media{color:var(--dim); font-size:11.5px; margin-left:6px}
+  .media button{background:transparent; border:1px solid var(--line); color:var(--acc); border-radius:6px;
+                font-size:11px; padding:1px 6px; cursor:pointer; margin-left:3px}
+  .media button:hover{border-color:var(--acc)}
+
+  /* ---- brani ---- */
+  .trk{margin-top:9px; border-top:1px solid var(--line); padding-top:5px}
+  .trow{display:flex; align-items:center; gap:7px; padding:4px 3px; border-radius:7px; font-size:12.8px}
+  .trow:hover{background:#36252b}
+  .trow .tn{color:var(--dim); font-variant-numeric:tabular-nums; flex:none; width:20px; text-align:right}
+  .trow .tt{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0}
+  .trow .td{color:var(--dim); font-size:11.5px; font-variant-numeric:tabular-nums; flex:none}
+  .trow .rate{flex:none}
+  .play{width:24px; height:24px; border-radius:50%; border:1px solid var(--line); background:transparent;
+        color:var(--dim); font-size:10px; line-height:1; cursor:pointer; flex:none; padding:0}
+  .play:hover{border-color:var(--acc); color:var(--acc)}
+  .play.on{background:var(--acc); border-color:var(--acc); color:#07210f}
+  .play:disabled{opacity:.25; cursor:default}
+  .disc{color:var(--dim); font-size:11px; text-transform:uppercase; letter-spacing:.4px; padding:6px 3px 2px}
+  .nostruct{color:var(--dim); font-size:12.3px; padding:4px 2px}
+
+  /* ---- avanzamento ---- */
+  .bar{height:5px; background:#3a2a30; border-radius:99px; margin-top:6px; overflow:hidden}
+  .bar>i{display:block; height:100%; background:var(--acc); border-radius:99px; transition:width .2s}
+  .pagina{display:inline-flex; align-items:center; gap:4px; font-size:12.5px; color:var(--dim); margin-left:2px}
+  .pagina input{width:54px; padding:3px 6px; font-size:12.5px; border-radius:7px; text-align:right}
+  .pagina .btn.sm{padding:3px 7px}
+
+  /* ---- cantina e bevute ---- */
+  .card.st-cellar{background:linear-gradient(90deg,rgba(224,86,111,.10),rgba(224,86,111,0) 190px);
+             border-color:rgba(224,86,111,.28); border-left-color:var(--acc)}
+  .tipo{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:0}
+  .qta{display:inline-flex; align-items:center; gap:3px; color:var(--dim); font-size:12.5px}
+  .qta b{color:var(--txt); font-size:13px; min-width:16px; text-align:center}
+  .qta button{width:22px; height:22px; border-radius:6px; border:1px solid var(--line); background:transparent; color:var(--dim); cursor:pointer; padding:0; line-height:1}
+  .qta button:hover{border-color:var(--acc); color:var(--acc)}
+  .bev{margin-top:9px; border-top:1px solid var(--line); padding-top:6px}
+  .brow{display:flex; align-items:center; gap:8px; padding:4px 3px; border-radius:7px; font-size:12.8px; flex-wrap:wrap}
+  .brow:hover{background:#36252b}
+  .brow .bd{color:var(--dim); font-variant-numeric:tabular-nums; flex:none}
+  .brow .bo{flex:1; min-width:120px}
+  .brow .bn{color:var(--warn); font-style:italic; flex-basis:100%; font-size:12.2px; padding-left:2px}
+  .brow .del{position:static; width:20px; height:20px}
+  .form{margin-top:9px; border-top:1px solid var(--line); padding-top:6px}
+  .form label{display:block; font-size:11.3px; color:var(--dim); margin:7px 0 3px}
+  .form .fld{width:100%; padding:6px 9px; font-size:13px; border-radius:8px}
+  .form .two{display:flex; gap:7px}
+  .form .two>div{flex:1; min-width:0}
+  .form .mact{margin-top:10px}
+
+  /* ---- pannello dettagli ---- */
+  .det{margin-top:9px; border-top:1px solid var(--line); padding-top:6px}
+  .det label{display:block; font-size:11.3px; color:var(--dim); margin:7px 0 3px}
+  .det .fld{width:100%; padding:6px 9px; font-size:13px; border-radius:8px}
+  .det textarea.fld{resize:vertical}
+  .det .two{display:flex; gap:7px}
+  .det .two>div{flex:1; min-width:0}
+  .det .fin{color:#8f7680; font-size:11.3px; margin-top:7px; line-height:1.4}
+
+  .ov{position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; z-index:60; padding:16px; overflow:auto}
+  .ov.on{display:block}
+  .modal{background:var(--panel); border:1px solid var(--line); border-radius:16px; max-width:520px; margin:6vh auto; padding:16px}
+  .modal h2{margin:0 0 12px; font-size:16px; overflow-wrap:anywhere}
+  .modal label{display:block; font-size:12.5px; color:var(--dim); margin:10px 0 4px}
+  .modal .fld{width:100%}
+  .rowf{display:flex; gap:8px}
+  .rowf>div{flex:1}
+  .mact{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap}
+  .mact .sp{margin-left:auto}
+  .res{margin-top:10px; display:flex; flex-direction:column; gap:6px; max-height:46vh; overflow:auto}
+  .ri{display:flex; gap:9px; align-items:center; background:var(--panel2); border:1px solid var(--line);
+      border-radius:10px; padding:7px; cursor:pointer; text-align:left; width:100%}
+  .ri:hover{border-color:var(--acc)}
+  .ri img{width:36px; height:52px; object-fit:cover; border-radius:5px; flex:none; background:#372a2e}
+  .ri .n{font-weight:600; font-size:13.5px}
+  .ri .s{color:var(--dim); font-size:12px}
+  .src{font-size:10px; padding:1px 6px; border-radius:99px; margin-left:6px;
+       border:1px solid currentColor; vertical-align:1px; font-weight:600; letter-spacing:.3px}
+  .src.off{color:#8fd6a0}
+  .hint{color:var(--dim); font-size:12.3px; margin-top:8px}
+  .toast{position:fixed; left:50%; bottom:20px; transform:translate(-50%,14px); opacity:0;
+    background:#f5ecee; color:#1a1012; padding:9px 15px; border-radius:99px; font-size:13.5px;
+    font-weight:600; z-index:90; pointer-events:none; transition:.2s; max-width:80vw; text-align:center}
+  .toast.on{opacity:1; transform:translate(-50%,0)}
+  .toast.act{pointer-events:auto}
+  .toast button{margin-left:10px; background:#1a1012; color:#f5ecee; border:0; border-radius:99px; padding:3px 10px; cursor:pointer; font-size:12.5px}
+</style>
+</head>
+<body>
+
+<div id="collage" aria-hidden="true"></div>
+<div id="velo" aria-hidden="true"></div>
+
+<header>
+  <div class="hrow">
+    <h1>🍷 I miei vini</h1>
+    <div class="stats" id="stats"></div>
+    <button id="avvisoLoc" hidden title="Premi per riprovare">
+      ⚠ Server non raggiungibile · l'ultima modifica non è stata salvata</button>
+  </div>
+  <div class="tools">
+    <button class="btn p" id="bAdd">+ Aggiungi vino</button>
+    <input id="q" class="fld" placeholder="Filtra: produttore, nome, denominazione, vitigno…" autocomplete="off">
+    <select id="fvoto" class="fld" style="flex:none" title="Filtra per voto">
+      <option value="">Tutti i voti</option>
+      <option value="6">★★★★★+ epici</option>
+      <option value="5">★★★★★ e più</option>
+      <option value="4">★★★★ e più</option>
+      <option value="3">★★★ e più</option>
+      <option value="2">★★ e più</option>
+      <option value="1">★ e più</option>
+      <option value="0">Senza voto</option>
+    </select>
+    <select id="ftipo" class="fld" style="flex:none" title="Filtra per tipo">
+      <option value="">Tutti i tipi</option>
+      <option value="rosso">Rossi</option>
+      <option value="bianco">Bianchi</option>
+      <option value="rosato">Rosati</option>
+      <option value="bollicine">Bollicine</option>
+      <option value="dolce">Dolci e passiti</option>
+    </select>
+    <span class="sp"></span>
+    <button class="btn sec2" id="bMenu" title="Altre funzioni">☰ Funzioni</button>
+    <button class="btn sec" id="bExp" title="Salva un backup .json">⬇ Backup</button>
+    <button class="btn sec" id="bImp" title="Ripristina o unisci un backup">⬆ Ripristina</button>
+    <button class="btn sec" id="bAcc" title="Account">☁ Accedi</button>
+    <input type="file" id="fImp" accept=".json,application/json" hidden>
+  </div>
+</header>
+
+<section id="benvenuto" hidden>
+  <div class="bw">
+    <h2>Tieni il conto dei vini che bevi</h2>
+    <p class="occhiello">
+      winelog ricorda i vini che vorresti provare, le bottiglie che hai in casa e quelle
+      che hai bevuto: quando, con chi, con cosa e quanto ti sono piaciute.
+      Niente consigli, niente classifiche, niente pubblicità: solo i tuoi vini.
+    </p>
+    <div class="bgrid">
+      <div><b>Tre colonne</b>
+        Da provare, in cantina (con il conto delle bottiglie) e bevuti.
+        Ogni volta che ne stappi una, la bottiglia scala e la bevuta si segna.</div>
+      <div><b>Si compila in fretta</b>
+        Produttore, nome, annata, tipo; il resto è facoltativo e ti viene suggerito
+        da quello che hai già scritto. Col codice a barre, dove c'è, ancora meno.</div>
+      <div><b>Ogni bevuta, un ricordo</b>
+        Data, occasione, abbinamento, voto e due righe. Il vino tiene la media
+        delle bevute, e il 5+ dorato è per quelli che non dimentichi.</div>
+      <div><b>Stesso account di tvlog, musiclog e booklog</b>
+        Un accesso solo, i dati sul server, tutto uguale su telefono e computer.
+        E una copia di tutto quando vuoi.</div>
+    </div>
+    <div class="bact">
+      <button class="btn p" id="bStart">Crea un account o accedi</button>
+    </div>
+    <p class="bpriv">
+      Cosa conserviamo: la tua email, per farti entrare, e l'elenco dei vini che segni.
+      Nient'altro — nessun tracciamento, nessuna cessione a terzi. I dati stanno su un
+      server europeo e ognuno vede solo i propri. Puoi cancellare tutto in qualsiasi
+      momento dalla finestra dell'account. Hai già un account sugli altri siti? Vale anche qui.
+    </p>
+    <p class="bpriv" style="border:0; padding-top:0">
+      Hai trovato un errore, o ti manca qualcosa? Scrivi a <span class="posta"></span>.
+    </p>
+  </div>
+</section>
+
+<nav id="tabBar" hidden></nav>
+<div id="ordMobWrap" hidden></div>
+
+<main>
+  <section class="col" id="c-plan">
+    <div class="chd" data-t="plan"><span class="dot" style="background:var(--plan)"></span><b>Da provare</b><span class="cnt"></span><span class="caret">▾</span></div>
+    <div class="clist"></div>
+  </section>
+  <section class="col" id="c-cellar">
+    <div class="chd" data-t="cellar"><span class="dot" style="background:var(--acc)"></span><b>In cantina</b><span class="cnt"></span><span class="caret">▾</span></div>
+    <div class="clist"></div>
+  </section>
+  <section class="col" id="c-done">
+    <div class="chd" data-t="done"><span class="dot" style="background:var(--ok)"></span><b>Bevuti</b><span class="cnt"></span><span class="caret">▾</span></div>
+    <div class="clist"></div>
+  </section>
+</main>
+
+<footer style="padding:4px 14px 70px; color:#8f7680; font-size:11.5px; line-height:1.6">
+  Schede compilate da te; dati dei codici a barre da
+  <a href="https://it.openfoodfacts.org/" target="_blank" rel="noopener" style="color:#8f7680">Open Food Facts</a> (ODbL).<br>
+  Segnalazioni e suggerimenti: <span class="posta"></span>
+  · <span title="Serve a capire se un dispositivo sta usando una versione vecchia">versione del 9 novembre 2026</span>
+</footer>
+
+<div class="ov" id="ovAdd">
+  <div class="modal">
+    <h2>Aggiungi un vino</h2>
+    <div class="rowf">
+      <input id="aCode" class="fld" placeholder="Codice a barre (facoltativo)" inputmode="numeric" autocomplete="off">
+      <button class="btn" id="bScan" style="flex:none" title="Inquadra il codice a barre con la fotocamera">📷 Scansiona</button>
+      <button class="btn" id="bCode" style="flex:none" title="Cerca il codice su Open Food Facts">Cerca</button>
+    </div>
+    <div class="hint" id="aHint">Se la bottiglia ha il codice a barre prova con quello: se è in archivio, i campi si compilano da soli.</div>
+    <div id="scanBox" hidden style="margin-top:8px"><video id="scanVideo" playsinline muted style="width:100%; border-radius:10px; background:#000; max-height:40vh"></video></div>
+    <div class="rowf">
+      <div><label>Produttore *</label><input id="aProd" class="fld" list="dlProd" placeholder="Es. Brezza" autocomplete="off"></div>
+      <div><label>Nome *</label><input id="aName" class="fld" placeholder="Es. Barolo Cannubi" autocomplete="off"></div>
+    </div>
+    <div class="rowf">
+      <div><label>Annata</label><input id="aYear" class="fld" placeholder="2019" inputmode="numeric" autocomplete="off"></div>
+      <div><label>Tipo</label>
+        <select id="aType" class="fld">
+          <option value="rosso">Rosso</option><option value="bianco">Bianco</option><option value="rosato">Rosato</option>
+          <option value="bollicine">Bollicine</option><option value="dolce">Dolce / passito</option>
+        </select></div>
+    </div>
+    <div class="rowf">
+      <div><label>Denominazione</label><input id="aDenom" class="fld" list="dlDenom" placeholder="Barolo DOCG" autocomplete="off"></div>
+      <div><label>Vitigno</label><input id="aGrape" class="fld" list="dlGrape" placeholder="Nebbiolo" autocomplete="off"></div>
+    </div>
+    <div class="rowf">
+      <div><label>Prezzo (€)</label><input id="aPrice" class="fld" placeholder="38" inputmode="decimal" autocomplete="off"></div>
+      <div><label>Dove comprato</label><input id="aShop" class="fld" list="dlShop" placeholder="Enoteca, cantina, supermercato…" autocomplete="off"></div>
+    </div>
+    <label>Dove lo metto?</label>
+    <div class="rowf">
+      <select id="aDove" class="fld">
+        <option value="plan">Da provare</option>
+        <option value="cellar">In cantina</option>
+      </select>
+      <input id="aQta" class="fld" value="1" inputmode="numeric" style="flex:0 0 90px" title="Bottiglie" hidden>
+    </div>
+    <div class="mact">
+      <span class="sp"></span>
+      <button class="btn gh" id="bCancel">Chiudi</button>
+      <button class="btn p" id="bSave">Aggiungi</button>
+    </div>
+  </div>
+</div>
+<datalist id="dlProd"></datalist><datalist id="dlDenom"></datalist><datalist id="dlGrape"></datalist>
+<datalist id="dlShop"></datalist><datalist id="dlOcc"></datalist><datalist id="dlPair"></datalist>
+
+<div class="ov" id="ovAcc">
+  <div class="modal">
+    <h2>Account</h2>
+    <div id="accOff">
+      <div class="hint" style="margin-bottom:10px">
+        I vini stanno sul server, legati al tuo account: serve per entrare, e li ritrovi
+        uguali da qualsiasi dispositivo. È lo stesso account di tvlog, musiclog e booklog: se ce l'hai, usa quello.
+      </div>
+      <label>Email</label>
+      <input id="accMail" class="fld" type="email" autocomplete="username" placeholder="tu@esempio.it">
+      <label>Password</label>
+      <input id="accPass" class="fld" type="password" autocomplete="current-password" placeholder="almeno 8 caratteri">
+      <div class="mact">
+        <button class="btn" id="bReg">Crea l'account</button>
+        <span class="sp"></span>
+        <button class="btn gh" id="accClose1">Chiudi</button>
+        <button class="btn p" id="bLogin">Accedi</button>
+      </div>
+    </div>
+    <div id="accOn" hidden>
+      <div class="hint" id="accWho" style="margin-bottom:10px"></div>
+      <div class="res" id="accLog"></div>
+      <div class="mact">
+        <button class="btn" id="bLogout">Esci</button>
+        <span class="sp"></span>
+        <button class="btn gh" id="accClose2">Chiudi</button>
+        <button class="btn p" id="bSync">⟳ Rileggi dal server</button>
+      </div>
+      <div class="hint" style="border-top:1px solid var(--line); margin-top:14px; padding-top:12px">
+        <b style="color:var(--txt)">Cancellare i tuoi dati</b><br>
+        Rimuove dal server tutti i vini del tuo account (gli altri siti non c'entrano).
+        Non esiste un'altra copia: scaricati un backup prima di procedere, se vuoi poterli ritrovare.
+        <div class="mact"><span class="sp"></span>
+          <button class="btn" id="bWipe" style="border-color:#5a2a2a">Elimina tutti i miei vini</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+var KEY="winelog-v1";
+var db={shows:[]};
+
+/* ============ utilità ============ */
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7) }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c] }) }
+function toast(m){ var t=document.getElementById("toast"); t.className="toast on"; t.textContent=m;
+  clearTimeout(toast._h); toast._h=setTimeout(function(){t.classList.remove("on")},2000) }
+function oggi(){ return new Date().toISOString().slice(0,10) }
+function dataIt(d){ if(!d) return ""; var p=d.split("-"); return p.length===3?(+p[2])+"/"+(+p[1])+"/"+p[0]:d }
+function euro(v){ return v?v.toLocaleString("it-IT",{minimumFractionDigits:0,maximumFractionDigits:2})+" €":"" }
+
+function removeShow(s){
+  var i=db.shows.indexOf(s); if(i<0) return;
+  db.shows.splice(i,1); elimina(s);
+  render();
+  var t=document.getElementById("toast");
+  t.className="toast on act";
+  t.textContent="«"+titolo(s)+"» rimosso ";
+  var b=document.createElement("button");
+  b.textContent="Annulla";
+  b.onclick=function(){ db.shows.push(s); tocca(s,true); t.className="toast"; render(); toast("Ripristinato") };
+  t.appendChild(b);
+  clearTimeout(toast._h);
+  toast._h=setTimeout(function(){ t.className="toast" },7000);
+}
+function find(id){ for(var i=0;i<db.shows.length;i++) if(db.shows[i].id===id) return db.shows[i] }
+function tocca(s,utente){ if(utente) s.updated=Date.now(); scrivi(s) }
+
+/* ============ modello ============
+   vino = { producer, name, vintage, type, denom, grape, price, shop, code,
+            qty (bottiglie in cantina), bevute:[{id,d,occ,pair,rating,note}],
+            rating (voto del vino: tuo, o suggerito dalla media), note, status }
+   status: "plan" | "cellar" (qty>0) | "done" (bevuto almeno una volta e qty=0)
+=================================== */
+var COLS=["plan","cellar","done"];
+var NOMI={plan:"Da provare",cellar:"In cantina",done:"Bevuti"};
+var TINTA={plan:"var(--plan)",cellar:"var(--acc)",done:"var(--ok)"};
+var TIPI={rosso:"#9b1c3a",bianco:"#e8d07a",rosato:"#f29bb4",bollicine:"#cfe3f5",dolce:"#d9892b"};
+var TIPO_NOME={rosso:"Rosso",bianco:"Bianco",rosato:"Rosato",bollicine:"Bollicine",dolce:"Dolce"};
+var tabAttiva="cellar";
+var ORDINI=[["recent","Modifiche"],["added","Data di aggiunta"],["rating","Voto"],["producer","Produttore A→Z"],
+            ["name","Nome A→Z"],["annoGiu","Annate recenti"],["annoSu","Annate vecchie"],["price","Prezzo"],["qty","Bottiglie"]];
+var ordine={plan:"recent",cellar:"recent",done:"recent"};
+function salvaOrdine(){ try{ localStorage.setItem(KEY+":ord",JSON.stringify(ordine)) }catch(e){} }
+function menuOrdine(col,cls,id){
+  return '<select class="'+cls+'" data-col="'+col+'"'+(id?' id="'+id+'"':'')+' title="Ordinamento di questa colonna">'+
+    ORDINI.map(function(o){ return '<option value="'+o[0]+'"'+(ordine[col]===o[0]?' selected':'')+'>'+o[1]+'</option>' }).join("")+
+    '</select>';
+}
+function statusOf(s){ return s.qty>0 ? "cellar" : (s.bevute.length ? "done" : "plan") }
+function titolo(s){ return s.name+(s.vintage?" "+s.vintage:"") }
+function mediaBevute(s){
+  var v=s.bevute.filter(function(b){ return b.rating }); if(!v.length) return null;
+  return { n:v.length, m:v.reduce(function(a,b){ return a+Math.min(b.rating,5) },0)/v.length };
+}
+
+function migrate(s){
+  var o={ id:s.id||uid(), producer:String(s.producer||""), name:String(s.name||"senza nome"), vintage:String(s.vintage||"").slice(0,4),
+    type:TIPI[s.type]?s.type:"rosso", denom:s.denom||"", grape:s.grape||"", price:parseFloat(s.price)||0, shop:s.shop||"", code:s.code||"",
+    qty:Math.max(0,parseInt(s.qty,10)||0),
+    bevute:Array.isArray(s.bevute)?s.bevute.filter(function(b){ return b && b.d }).map(function(b){
+      return {id:b.id||uid(), d:String(b.d).slice(0,10), occ:b.occ||"", pair:b.pair||"", rating:parseInt(b.rating,10)||0, note:b.note||""} }):[],
+    rating:parseInt(s.rating,10)||0, note:s.note||"",
+    added:s.added||Date.now(), updated:s.updated||Date.now(),
+    open:!!s.open, openDet:false, openBev:false };
+  o.bevute.sort(function(a,b){ return b.d.localeCompare(a.d) });
+  return o;
+}
+
+/* suggerimenti: tutto ciò che hai già scritto, campo per campo */
+function aggiornaDatalist(){
+  function riempi(id,vals){
+    var seen={}, h="";
+    vals.forEach(function(v){ v=String(v||"").trim(); if(v && !seen[v.toLowerCase()]){ seen[v.toLowerCase()]=1; h+='<option value="'+esc(v)+'">' } });
+    document.getElementById(id).innerHTML=h;
+  }
+  var V=db.shows;
+  riempi("dlProd",V.map(function(s){ return s.producer }));
+  riempi("dlDenom",V.map(function(s){ return s.denom }).concat(["Barolo DOCG","Barbaresco DOCG","Chianti Classico DOCG","Brunello di Montalcino DOCG","Amarone della Valpolicella DOCG","Franciacorta DOCG","Prosecco Superiore DOCG","Etna DOC","Bolgheri DOC","Alto Adige DOC","Soave DOC","Verdicchio dei Castelli di Jesi DOC","Primitivo di Manduria DOC","Montepulciano d'Abruzzo DOC","Champagne AOC"]));
+  riempi("dlGrape",V.map(function(s){ return s.grape }).concat(["Nebbiolo","Sangiovese","Barbera","Montepulciano","Primitivo","Nero d'Avola","Corvina","Aglianico","Merlot","Cabernet Sauvignon","Pinot Nero","Syrah","Chardonnay","Pinot Grigio","Sauvignon","Glera","Garganega","Verdicchio","Vermentino","Falanghina","Riesling","Gewürztraminer","Moscato"]));
+  riempi("dlShop",V.map(function(s){ return s.shop }));
+  var occ=[], pair=[];
+  V.forEach(function(s){ s.bevute.forEach(function(b){ occ.push(b.occ); pair.push(b.pair) }) });
+  riempi("dlOcc",occ.concat(["Cena a casa","Ristorante","Regalo","Compleanno","Aperitivo","Festa","Degustazione"]));
+  riempi("dlPair",pair.concat(["Carne rossa","Brasato","Pesce","Formaggi","Pizza","Pasta","Risotto","Dolce","Da solo"]));
+}
+
+/* ============ render ============ */
+function render(){
+  var y=window.scrollY;
+  var q=document.getElementById("q").value.trim().toLowerCase();
+  var vf=document.getElementById("fvoto").value, tf=document.getElementById("ftipo").value;
+  var filtra=!!(q||vf||tf);
+  function passa(s){
+    if(q && [s.producer,s.name,s.vintage,s.denom,s.grape,s.shop,s.note].join(" · ").toLowerCase().indexOf(q)<0) return false;
+    if(tf && s.type!==tf) return false;
+    if(vf==="0") return !(s.rating||0);
+    if(vf) return (s.rating||0)>=Number(vf);
+    return true;
+  }
+  var g={}; COLS.forEach(function(t){ g[t]=[] });
+  db.shows.forEach(function(s){ g[statusOf(s)].push(s) });
+
+  var CMP={
+    recent:function(a,b){ return (b.updated||0)-(a.updated||0) },
+    added:function(a,b){ return (b.added||0)-(a.added||0) },
+    name:function(a,b){ return a.name.localeCompare(b.name,"it") },
+    producer:function(a,b){ return a.producer.localeCompare(b.producer,"it") || a.name.localeCompare(b.name,"it") || (parseInt(a.vintage,10)||0)-(parseInt(b.vintage,10)||0) },
+    rating:function(a,b){ return (b.rating||0)-(a.rating||0) || a.producer.localeCompare(b.producer,"it") },
+    annoGiu:function(a,b){ return (parseInt(b.vintage,10)||0)-(parseInt(a.vintage,10)||0) || a.producer.localeCompare(b.producer,"it") },
+    annoSu:function(a,b){ return (parseInt(a.vintage,10)||9999)-(parseInt(b.vintage,10)||9999) || a.producer.localeCompare(b.producer,"it") },
+    price:function(a,b){ return (b.price||0)-(a.price||0) },
+    qty:function(a,b){ return (b.qty||0)-(a.qty||0) }
+  };
+
+  var conta={};
+  COLS.forEach(function(t){
+    var list=g[t].slice().sort(CMP[ordine[t]]||CMP.recent);
+    var shown=filtra?list.filter(passa):list;
+    conta[t]=filtra?shown.length+"/"+list.length:String(list.length);
+    var sec=document.getElementById("c-"+t);
+    sec.classList.toggle("attiva",t===tabAttiva);
+    sec.querySelector(".cnt").textContent=conta[t];
+    var vecchio=sec.querySelector("select.ordcol"); if(vecchio) vecchio.remove();
+    sec.querySelector(".cnt").insertAdjacentHTML("beforebegin",menuOrdine(t,"ordcol"));
+    sec.querySelector(".clist").innerHTML=shown.length
+      ? shown.map(card).join("")
+      : '<div class="empty">'+(filtra?"Nessun risultato":"Niente qui")+'</div>';
+  });
+  document.getElementById("tabBar").innerHTML=COLS.map(function(t){
+    return '<button data-tab="'+t+'" class="'+(t===tabAttiva?"on":"")+'">'+
+      '<span class="pal" style="background:'+TINTA[t]+'"></span>'+NOMI[t]+
+      ' <span style="opacity:.6">'+conta[t]+'</span></button>';
+  }).join("");
+  document.getElementById("ordMobWrap").innerHTML=menuOrdine(tabAttiva,"ordcol","ordMob");
+
+  var V=db.shows, bott=V.reduce(function(a,s){ return a+(s.qty||0) },0),
+      bev=V.reduce(function(a,s){ return a+s.bevute.length },0),
+      epici=V.filter(function(s){ return s.rating>=6 }).length,
+      valore=V.reduce(function(a,s){ return a+(s.qty||0)*(s.price||0) },0);
+  document.getElementById("stats").textContent = V.length
+    ? V.length+" vini · "+bott+(bott===1?" bottiglia":" bottiglie")+" in cantina"+(valore?" (~"+euro(Math.round(valore))+")":"")+
+      " · "+bev+" bevute"+(epici?" · "+epici+" epici":"")
+    : "";
+  aggiornaDatalist();
+  avvisoRete();
+  vetrina();
+  window.scrollTo(0,y);
+}
+function avvisoRete(){
+  var av=document.getElementById("avvisoLoc");
+  av.hidden=!(typeof reteKO!=="undefined" && reteKO);
+}
+function vetrina(){
+  var vuoto = !(typeof connesso==="function" && connesso());
+  document.getElementById("benvenuto").hidden=!vuoto;
+  document.body.classList.toggle("dentro",!vuoto);
+  document.querySelector("main").hidden=vuoto;
+  document.getElementById("tabBar").hidden=vuoto;
+  document.getElementById("ordMobWrap").hidden=vuoto;
+  document.querySelector(".tools").style.display=vuoto?"none":"";
+}
+
+/* sfondo: niente archivio di etichette libero, quindi tessere nei colori del
+   vino, disposte come le copertine degli altri siti */
+function collage(){
+  if(collage._fatto) return; collage._fatto=true;
+  var box=document.getElementById("collage"), h="", pal=["#5a1020","#7a1a30","#3b0d1a","#8c5a1a","#b8972e","#6b2a3a","#2f1a22","#9b4a5a","#a98a3a","#4a1a2a"];
+  for(var i=0;i<40;i++){
+    var c1=pal[Math.floor(Math.random()*pal.length)], c2=pal[Math.floor(Math.random()*pal.length)];
+    h+='<div class="tile" style="background:linear-gradient('+(120+Math.floor(Math.random()*120))+'deg,'+c1+','+c2+')"></div>';
+  }
+  box.innerHTML=h;
+  requestAnimationFrame(function(){ box.classList.add("on") });
+}
+
+document.getElementById("tabBar").addEventListener("click",function(e){
+  var b=e.target.closest("[data-tab]"); if(!b) return;
+  tabAttiva=b.dataset.tab;
+  try{ localStorage.setItem(KEY+":tab",tabAttiva) }catch(err){}
+  render(); window.scrollTo(0,0); document.body.classList.remove("giu");
+});
+document.getElementById("bMenu").onclick=function(){ document.querySelector(".tools").classList.toggle("aperta") };
+(function(){
+  var soglia=24;
+  window.addEventListener("scroll",function(){
+    var y=window.scrollY||document.documentElement.scrollTop;
+    document.body.classList.toggle("giu", y>soglia);
+  },{passive:true});
+})();
+
+function rateHtml(id,v,extra){
+  var h='<span class="rate'+(v>=6?" epic":"")+'" title="Voto">';
+  h+='<b class="plus'+(v>=6?"":" off")+'" data-a="rate" data-i="'+id+'" '+(extra||"")+' data-v="6" title="Epico">+</b>';
+  for(var i=5;i>=1;i--) h+='<b class="'+(v>=i?"":"off")+'" data-a="rate" data-i="'+id+'" '+(extra||"")+' data-v="'+i+'">★</b>';
+  return h+'</span>';
+}
+function bevuteHtml(s){
+  var h='<div class="bev">';
+  if(!s.bevute.length) h+='<div class="nostruct">Nessuna bevuta segnata.</div>';
+  s.bevute.forEach(function(b){
+    h+='<div class="brow"><span class="bd">'+dataIt(b.d)+'</span>'+
+       '<span class="bo">'+esc(b.occ||"")+(b.occ&&b.pair?" · ":"")+(b.pair?'<i>'+esc(b.pair)+'</i>':'')+'</span>'+
+       rateHtml(s.id,b.rating,'data-b="'+b.id+'"')+
+       '<button class="del" data-a="delbev" data-i="'+s.id+'" data-b="'+b.id+'" title="Togli questa bevuta">✕</button>'+
+       (b.note?'<span class="bn">'+esc(b.note)+'</span>':'')+'</div>';
+  });
+  return h+'</div>';
+}
+function formBevutaHtml(s){
+  return '<div class="form" data-form="'+s.id+'">'+
+    '<div class="two"><div><label>Quando</label><input class="fld" type="date" data-bf="d" value="'+oggi()+'"></div>'+
+    '<div><label>Occasione</label><input class="fld" data-bf="occ" list="dlOcc" placeholder="Cena a casa, ristorante…" autocomplete="off"></div></div>'+
+    '<div class="two"><div><label>Abbinamento</label><input class="fld" data-bf="pair" list="dlPair" placeholder="Con cosa l\'hai bevuto" autocomplete="off"></div>'+
+    '<div><label>Voto</label><div style="padding-top:6px">'+rateHtml(s.id,0,'data-nuova="1"')+'</div></div></div>'+
+    '<label>Due righe</label><textarea class="fld" rows="2" data-bf="note" placeholder="Com\'era, con chi, cosa ti ha lasciato…"></textarea>'+
+    '<div class="mact"><span class="sp"></span><button class="btn gh" data-a="annullabev" data-i="'+s.id+'">Annulla</button>'+
+    '<button class="btn p" data-a="salvabev" data-i="'+s.id+'">Segna la bevuta'+(s.qty>0?" (−1 bottiglia)":"")+'</button></div></div>';
+}
+function detailHtml(s){
+  return '<div class="det">'+
+    '<div class="two"><div><label>Produttore</label><input class="fld" data-f="producer" data-i="'+s.id+'" list="dlProd" value="'+esc(s.producer)+'"></div>'+
+    '<div><label>Nome</label><input class="fld" data-f="name" data-i="'+s.id+'" value="'+esc(s.name)+'"></div></div>'+
+    '<div class="two"><div style="flex:0 0 80px"><label>Annata</label><input class="fld" data-f="vintage" data-i="'+s.id+'" value="'+esc(s.vintage)+'" inputmode="numeric"></div>'+
+    '<div><label>Tipo</label><select class="fld" data-f="type" data-i="'+s.id+'">'+Object.keys(TIPI).map(function(k){ return '<option value="'+k+'"'+(s.type===k?' selected':'')+'>'+TIPO_NOME[k]+'</option>' }).join("")+'</select></div>'+
+    '<div><label>Denominazione</label><input class="fld" data-f="denom" data-i="'+s.id+'" list="dlDenom" value="'+esc(s.denom)+'"></div></div>'+
+    '<div class="two"><div><label>Vitigno</label><input class="fld" data-f="grape" data-i="'+s.id+'" list="dlGrape" value="'+esc(s.grape)+'"></div>'+
+    '<div style="flex:0 0 90px"><label>Prezzo €</label><input class="fld" data-f="price" data-i="'+s.id+'" value="'+(s.price||"")+'" inputmode="decimal"></div>'+
+    '<div><label>Dove comprato</label><input class="fld" data-f="shop" data-i="'+s.id+'" list="dlShop" value="'+esc(s.shop)+'"></div></div>'+
+    '<div class="two"><div><label>Codice a barre</label><input class="fld" data-f="code" data-i="'+s.id+'" value="'+esc(s.code)+'" inputmode="numeric"></div>'+
+    '<div style="flex:0 0 110px"><label>Bottiglie</label><input class="fld" data-f="qty" data-i="'+s.id+'" value="'+s.qty+'" inputmode="numeric"></div></div>'+
+    '<label>Nota</label><textarea class="fld" rows="2" data-f="note" data-i="'+s.id+'" placeholder="Chi te l\'ha consigliato, dove l\'hai scoperto…">'+esc(s.note||"")+'</textarea>'+
+    '<div class="fin">Aggiunto il '+new Date(s.added).toLocaleDateString("it-IT")+'</div>'+
+    '</div>';
+}
+function card(s){
+  var st=statusOf(s), md=mediaBevute(s);
+  var cls="card st-"+st+(s.rating>=6?" epic":"");
+  var h='<div class="'+cls+'" data-id="'+s.id+'">';
+  h+='<button class="del" data-a="del" data-i="'+s.id+'" title="Rimuovi dall\'elenco">✕</button>';
+  h+='<div class="top">';
+  h+='<div class="pos ph" style="background:'+TIPI[s.type]+'; color:'+(s.type==="bianco"||s.type==="bollicine"||s.type==="rosato"?"#3a1a22":"#fff")+'" title="'+TIPO_NOME[s.type]+'">'+esc((s.name||"?").charAt(0).toUpperCase())+'</div>';
+  h+='<div class="body">';
+  h+='<div class="art">'+esc(s.producer||"produttore sconosciuto")+'</div>';
+  h+='<div class="ttl">'+esc(s.name)+(s.vintage?' <span class="yr">'+esc(s.vintage)+'</span>':'')+'</div>';
+  h+='<div class="meta"><span class="tipo" style="background:'+TIPI[s.type]+'"></span>'+TIPO_NOME[s.type]+
+     (s.denom?' · '+esc(s.denom):'')+(s.grape?' · '+esc(s.grape):'')+(s.price?' · '+euro(s.price):'')+
+     ' · '+rateHtml(s.id,s.rating)+
+     (md?'<span class="media">media bevute '+md.m.toFixed(1).replace(".",",")+' ('+md.n+')'+
+         (Math.round(md.m)!==Math.min(s.rating,5)||!s.rating?'<button data-a="usamedia" data-i="'+s.id+'" title="Dai al vino il voto medio delle bevute">usa</button>':'')+'</span>':'')+
+     '</div>';
+  h+='<div class="acts">'+
+     '<button class="btn sm" data-a="bevuto" data-i="'+s.id+'" title="Segna una bevuta">🍷 Bevuto</button>'+
+     '<span class="qta" title="Bottiglie in cantina"><button data-a="meno" data-i="'+s.id+'">−</button><b>'+s.qty+'</b><button data-a="piu" data-i="'+s.id+'">+</button> bott.</span>'+
+     '<button class="btn sm" data-a="open" data-i="'+s.id+'">'+(s.open?"▴":"▾")+' Bevute'+(s.bevute.length?' ('+s.bevute.length+')':'')+'</button>'+
+     '<button class="btn sm" data-a="edit" data-i="'+s.id+'">'+(s.openDet?"▴":"▾")+' Dettagli</button>'+
+     '</div>';
+  if(s.note) h+='<div class="note">'+esc(s.note)+'</div>';
+  h+='</div></div>';
+  if(s.openBev) h+=formBevutaHtml(s);
+  if(s.open) h+=bevuteHtml(s);
+  if(s.openDet) h+=detailHtml(s);
+  return h+'</div>';
+}
+
+/* ---- azioni sulla scheda ---- */
+var votoNuova={};   // voto scelto nel modulo bevuta, per vino
+document.addEventListener("click",function(ev){
+  var b=ev.target.closest("[data-a]"); if(!b) return;
+  var a=b.dataset.a, s=find(b.dataset.i); if(!s) return;
+  if(a==="open"){ s.open=!s.open; render(); return }
+  if(a==="edit"){ s.openDet=!s.openDet; render(); return }
+  if(a==="del"){ removeShow(s); return }
+  if(a==="rate"){
+    var v=Number(b.dataset.v);
+    if(b.dataset.nuova){ votoNuova[s.id]=(votoNuova[s.id]===v)?0:v; aggiornaStelleForm(s); return }
+    if(b.dataset.b){ var bv=s.bevute.filter(function(x){ return x.id===b.dataset.b })[0]; if(bv){ bv.rating=(bv.rating===v)?0:v; tocca(s,true); render() } return }
+    s.rating=(s.rating===v)?0:v; tocca(s,true); render(); return;
+  }
+  if(a==="usamedia"){ var md=mediaBevute(s); if(md){ s.rating=Math.max(1,Math.round(md.m)); tocca(s,true); render() } return }
+  if(a==="piu"){ s.qty=(s.qty||0)+1; tocca(s,true); render(); return }
+  if(a==="meno"){ if(s.qty>0){ s.qty--; tocca(s,true); render() } return }
+  if(a==="bevuto"){ s.openBev=!s.openBev; votoNuova[s.id]=0; render(); return }
+  if(a==="annullabev"){ s.openBev=false; render(); return }
+  if(a==="salvabev"){
+    var f=document.querySelector('[data-form="'+s.id+'"]'); if(!f) return;
+    var g=function(k){ var el=f.querySelector('[data-bf="'+k+'"]'); return el?el.value.trim():"" };
+    var d=g("d")||oggi();
+    s.bevute.push({id:uid(), d:d, occ:g("occ"), pair:g("pair"), rating:votoNuova[s.id]||0, note:g("note")});
+    s.bevute.sort(function(x,y){ return y.d.localeCompare(x.d) });
+    if(s.qty>0) s.qty--;
+    if(!s.rating && votoNuova[s.id]) s.rating=votoNuova[s.id];   // primo voto: vale anche per il vino
+    s.openBev=false; s.open=true;
+    tocca(s,true); render();
+    toast("Bevuta segnata"+(s.qty>0?" · restano "+s.qty+" bottiglie":""));
+    return;
+  }
+  if(a==="delbev"){
+    s.bevute=s.bevute.filter(function(x){ return x.id!==b.dataset.b });
+    tocca(s,true); render(); return;
+  }
+});
+function aggiornaStelleForm(s){
+  var f=document.querySelector('[data-form="'+s.id+'"]'); if(!f) return;
+  var v=votoNuova[s.id]||0, wrap=f.querySelector(".rate");
+  wrap.classList.toggle("epic",v>=6);
+  wrap.querySelectorAll("b").forEach(function(st){ st.classList.toggle("off",Number(st.dataset.v)>v && !(st.classList.contains("plus")&&v>=6)) });
+}
+document.querySelectorAll(".chd").forEach(function(h){
+  var t=h.dataset.t;
+  try{ if(localStorage.getItem(KEY+":cl:"+t)==="1") h.parentNode.classList.add("closed") }catch(e){}
+  h.addEventListener("click",function(e){
+    if(e.target.closest("select")) return;
+    var c=h.parentNode.classList.toggle("closed");
+    try{ localStorage.setItem(KEY+":cl:"+t,c?"1":"0") }catch(e2){}
+  });
+});
+document.addEventListener("change",function(ev){
+  var el=ev.target.closest?ev.target.closest("[data-f]"):null; if(!el) return;
+  var s=find(el.dataset.i); if(!s) return;
+  var f=el.dataset.f, v=el.value;
+  if(f==="name"){ var t=v.trim(); if(t) s.name=t }
+  else if(f==="vintage") s.vintage=v.trim().slice(0,4);
+  else if(f==="type"){ if(TIPI[v]) s.type=v }
+  else if(f==="price") s.price=parseFloat(String(v).replace(",","."))||0;
+  else if(f==="qty") s.qty=Math.max(0,parseInt(v,10)||0);
+  else s[f]=v.trim();
+  tocca(s,true);
+  clearTimeout(window.__rt); window.__rt=setTimeout(render,150);
+});
+
+/* ============ aggiunta ============ */
+var ovAdd=document.getElementById("ovAdd");
+function openAdd(){
+  ovAdd.classList.add("on");
+  ["aCode","aProd","aName","aYear","aDenom","aGrape","aPrice","aShop"].forEach(function(id){ document.getElementById(id).value="" });
+  document.getElementById("aType").value="rosso"; document.getElementById("aDove").value="plan"; document.getElementById("aQta").value="1";
+  document.getElementById("aQta").hidden=true;
+  document.getElementById("aHint").textContent="Se la bottiglia ha il codice a barre prova con quello: se è in archivio, i campi si compilano da soli.";
+  fermaScan();
+  setTimeout(function(){ document.getElementById("aProd").focus() },50);
+}
+document.getElementById("bAdd").onclick=openAdd;
+document.getElementById("bCancel").onclick=function(){ fermaScan(); ovAdd.classList.remove("on") };
+ovAdd.addEventListener("click",function(e){ if(e.target===ovAdd){ fermaScan(); ovAdd.classList.remove("on") } });
+document.getElementById("aDove").onchange=function(){ document.getElementById("aQta").hidden=this.value!=="cellar" };
+document.getElementById("bSave").onclick=function(){
+  var prod=document.getElementById("aProd").value.trim(), name=document.getElementById("aName").value.trim();
+  if(!prod||!name){ toast("Produttore e nome sono obbligatori"); return }
+  var dove=document.getElementById("aDove").value;
+  addShow({ producer:prod, name:name, vintage:document.getElementById("aYear").value.trim().slice(0,4),
+    type:document.getElementById("aType").value, denom:document.getElementById("aDenom").value.trim(),
+    grape:document.getElementById("aGrape").value.trim(), price:parseFloat(document.getElementById("aPrice").value.replace(",","."))||0,
+    shop:document.getElementById("aShop").value.trim(), code:document.getElementById("aCode").value.trim(),
+    qty:dove==="cellar"?Math.max(1,parseInt(document.getElementById("aQta").value,10)||1):0 });
+};
+/* vitigno suggerito dalla denominazione, se il campo è vuoto */
+var VITIGNO_DI={barolo:"Nebbiolo",barbaresco:"Nebbiolo",roero:"Nebbiolo",gattinara:"Nebbiolo",chianti:"Sangiovese",brunello:"Sangiovese","nobile di montepulciano":"Sangiovese",morellino:"Sangiovese",
+  amarone:"Corvina",valpolicella:"Corvina",bardolino:"Corvina",soave:"Garganega",prosecco:"Glera",franciacorta:"Chardonnay",trentodoc:"Chardonnay",champagne:"Chardonnay",
+  "montepulciano d":"Montepulciano",primitivo:"Primitivo",taurasi:"Aglianico",aglianico:"Aglianico",verdicchio:"Verdicchio",vermentino:"Vermentino",etna:"Nerello Mascalese",
+  "nero d":"Nero d'Avola",cannonau:"Cannonau",lambrusco:"Lambrusco",barbera:"Barbera",dolcetto:"Dolcetto",gavi:"Cortese",lugana:"Trebbiano di Lugana",fiano:"Fiano",greco:"Greco",falanghina:"Falanghina",moscato:"Moscato"};
+document.getElementById("aDenom").addEventListener("change",function(){
+  var g=document.getElementById("aGrape"); if(g.value.trim()) return;
+  var d=this.value.toLowerCase();
+  Object.keys(VITIGNO_DI).some(function(k){ if(d.indexOf(k)>-1){ g.value=VITIGNO_DI[k]; return true } return false });
+  if(/prosecco|franciacorta|trentodoc|champagne|spumante|brut|cava/.test(d)) document.getElementById("aType").value="bollicine";
+  else if(/passito|moscato|recioto|vin santo|sauternes|porto/.test(d)) document.getElementById("aType").value="dolce";
+  else if(/soave|verdicchio|vermentino|gavi|lugana|fiano|greco|falanghina|pinot grigio|chardonnay|sauvignon|riesling|gewürz|bianco/.test(d)) document.getElementById("aType").value="bianco";
+  else if(/rosato|cerasuolo|chiaretto/.test(d)) document.getElementById("aType").value="rosato";
+});
+
+/* -- codice a barre: Open Food Facts (libero), copre soprattutto la grande distribuzione -- */
+function getJSON(url,opt){ return fetch(url,opt).then(function(r){ if(!r.ok) throw new Error("http "+r.status); return r.json() }) }
+function cercaCodice(code){
+  code=String(code||"").replace(/\D/g,""); if(code.length<8){ toast("Codice troppo corto"); return }
+  var hint=document.getElementById("aHint"); hint.textContent="Cerco il codice "+code+"…";
+  var dup=db.shows.filter(function(s){ return s.code===code })[0];
+  if(dup){ hint.textContent="Questo codice è già in lista: «"+titolo(dup)+"» ("+dup.producer+")"; return }
+  getJSON("https://world.openfoodfacts.org/api/v2/product/"+code+".json?fields=product_name,product_name_it,brands,quantity,categories_tags,labels_tags,generic_name")
+    .then(function(j){
+      var p=j.product; if(j.status!==1||!p){ hint.textContent="Codice non in archivio: compila a mano, il codice resta salvato."; return }
+      var nome=p.product_name_it||p.product_name||"", marca=(p.brands||"").split(",")[0].trim();
+      if(marca && !document.getElementById("aProd").value) document.getElementById("aProd").value=marca;
+      if(nome && !document.getElementById("aName").value) document.getElementById("aName").value=nome.replace(/\b(19|20)\d{2}\b/,"").trim();
+      var anno=(nome.match(/\b(19|20)\d{2}\b/)||[])[0]; if(anno) document.getElementById("aYear").value=anno;
+      var cat=(p.categories_tags||[]).join(" ");
+      if(/sparkling|spumant|prosecco|champagne/.test(cat)) document.getElementById("aType").value="bollicine";
+      else if(/white-wine|vini-bianchi/.test(cat)) document.getElementById("aType").value="bianco";
+      else if(/rose/.test(cat)) document.getElementById("aType").value="rosato";
+      else if(/red-wine|vini-rossi/.test(cat)) document.getElementById("aType").value="rosso";
+      hint.textContent="Trovato su Open Food Facts: controlla i campi e completa.";
+      document.getElementById("aDenom").dispatchEvent(new Event("change"));
+    }).catch(function(){ hint.textContent="Open Food Facts non raggiungibile: compila a mano." });
+}
+document.getElementById("bCode").onclick=function(){ cercaCodice(document.getElementById("aCode").value) };
+document.getElementById("aCode").addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); cercaCodice(this.value) } });
+/* scansione con la fotocamera, dove il browser la offre (Chrome su Android) */
+var scanStream=null, scanTimer=null;
+function fermaScan(){
+  clearInterval(scanTimer); scanTimer=null;
+  if(scanStream){ scanStream.getTracks().forEach(function(t){ t.stop() }); scanStream=null }
+  document.getElementById("scanBox").hidden=true;
+}
+document.getElementById("bScan").onclick=function(){
+  if(scanStream){ fermaScan(); return }
+  if(!("BarcodeDetector" in window) || !navigator.mediaDevices){ toast("Questo browser non legge i codici: scrivilo a mano"); return }
+  var det=new window.BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e"]}), video=document.getElementById("scanVideo");
+  navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(function(st){
+    scanStream=st; video.srcObject=st; video.play(); document.getElementById("scanBox").hidden=false;
+    scanTimer=setInterval(function(){
+      det.detect(video).then(function(codes){
+        if(codes&&codes.length){ document.getElementById("aCode").value=codes[0].rawValue; fermaScan(); cercaCodice(codes[0].rawValue) }
+      }).catch(function(){});
+    },400);
+  }).catch(function(){ toast("Fotocamera non disponibile") });
+};
+
+function addShow(o){
+  var dup=db.shows.filter(function(s){ return s.producer.toLowerCase()===o.producer.toLowerCase() && s.name.toLowerCase()===o.name.toLowerCase() && (s.vintage||"")===(o.vintage||"") })[0];
+  if(dup){ toast("«"+titolo(dup)+"» di "+dup.producer+" è già in lista"); ovAdd.classList.remove("on"); return }
+  var s=migrate({ id:uid(), producer:o.producer, name:o.name, vintage:o.vintage, type:o.type, denom:o.denom, grape:o.grape,
+                  price:o.price, shop:o.shop, code:o.code, qty:o.qty, bevute:[], rating:0, note:"", added:Date.now(), updated:Date.now() });
+  db.shows.push(s); tocca(s,true);
+  fermaScan(); ovAdd.classList.remove("on");
+  render();
+  toast("«"+titolo(s)+"» aggiunto "+(s.qty?"in cantina ("+s.qty+")":"a Da provare"));
+}
+
+/* ============ backup ============ */
+document.getElementById("bExp").onclick=function(){
+  var blob=new Blob([JSON.stringify({app:"winelog",v:1,exported:new Date().toISOString(),shows:db.shows})],{type:"application/json"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="winelog-backup-"+new Date().toISOString().slice(0,10)+".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(a.href) },2000);
+  toast("Backup salvato");
+};
+document.getElementById("bImp").onclick=function(){ document.getElementById("fImp").click() };
+document.getElementById("fImp").onchange=function(e){
+  var f=e.target.files[0]; if(!f) return;
+  var fr=new FileReader();
+  fr.onload=function(){
+    try{
+      var d=JSON.parse(fr.result), inc=Array.isArray(d)?d:d.shows;
+      if(!Array.isArray(inc)) throw 0;
+      var merge=db.shows.length && confirm("Unire al contenuto attuale?\n\nOK = unisci  ·  Annulla = sostituisci tutto");
+      if(!merge){ db.shows.slice().forEach(function(s){ elimina(s) }); db.shows=[] }
+      var n=0;
+      inc.forEach(function(s){
+        if(!s||!s.name) return;
+        if(db.shows.some(function(x){ return x.name.toLowerCase()===String(s.name).toLowerCase() && x.producer.toLowerCase()===String(s.producer||"").toLowerCase() && (x.vintage||"")===String(s.vintage||"") })) return;
+        var m=migrate(s); db.shows.push(m); tocca(m,false); n++;
+      });
+      render(); toast(n+" vini importati");
+    }catch(err){ toast("File non valido") }
+  };
+  fr.readAsText(f);
+  e.target.value="";
+};
+
+/* ===================== account e server =====================
+   Stesso progetto Supabase di tvlog e musiclog (stessi utenti), tabella "wines".
+   Il server è l'unica copia: si legge all'apertura, si scrive subito,
+   si rilegge tornando sulla pagina.
+================================================================ */
+var SB_URL="https://cciycxllvuxjotfqrubw.supabase.co";
+var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjaXljeGxsdnV4am90ZnFydWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4OTI2NTAsImV4cCI6MjEwNzQ2ODY1MH0.rhp8HmRLk2L-D1xdujNQHHf0YwmpSbOOZ4O6o_dmgt8";
+var TAB="/rest/v1/wines";
+var SESS="winelog-sess";
+var sess=null;
+
+function loadSess(){ try{ sess=JSON.parse(localStorage.getItem(SESS)||"null") }catch(e){ sess=null } }
+function saveSess(){ try{ if(sess) localStorage.setItem(SESS,JSON.stringify(sess)); else localStorage.removeItem(SESS) }catch(e){} }
+function connesso(){ return !!(sess && sess.access_token) }
+
+function sbFetch(path,opt,noRetry){
+  opt=opt||{};
+  var h=opt.headers||{};
+  h["apikey"]=SB_KEY; h["Content-Type"]="application/json";
+  if(connesso()) h["Authorization"]="Bearer "+sess.access_token;
+  opt.headers=h;
+  return fetch(SB_URL+path,opt).then(function(r){
+    if(r.status===401 && connesso() && !noRetry) return refreshSess().then(function(){ return sbFetch(path,opt,true) });
+    return r;
+  });
+}
+function refreshSess(){
+  if(!sess || !sess.refresh_token) return Promise.reject(new Error("sessione scaduta"));
+  return fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{
+    method:"POST", headers:{apikey:SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({refresh_token:sess.refresh_token})
+  }).then(function(r){ return r.json() }).then(function(d){
+    if(!d.access_token) throw new Error("sessione scaduta");
+    sess={access_token:d.access_token, refresh_token:d.refresh_token, email:(d.user&&d.user.email)||(sess&&sess.email)||""};
+    saveSess(); return sess;
+  });
+}
+function authCall(path,email,pass){
+  return fetch(SB_URL+path,{ method:"POST", headers:{apikey:SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({email:email,password:pass}) })
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d} }) });
+}
+function erroreAuth(d){
+  var m=(d&&(d.msg||d.error_description||d.message||d.error))||"errore";
+  if(/invalid login/i.test(m)) return "Email o password non validi";
+  if(/already registered|already exists/i.test(m)) return "Account già esistente: usa Accedi";
+  if(/password/i.test(m) && /least|short/i.test(m)) return "Password troppo corta";
+  if(/confirm/i.test(m)) return "Devi confermare l'email prima di accedere";
+  return m;
+}
+function pullRemote(){
+  return sbFetch(TAB+"?select=id,payload&order=updated_at.asc").then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error("lettura: "+t.slice(0,120)) });
+    return r.json();
+  });
+}
+function ricarica(silenzioso){
+  if(!connesso()) return Promise.reject(new Error("non connesso"));
+  if(coda.length || inVolo) return Promise.resolve();
+  return pullRemote().then(function(righe){
+    var aperte={}; db.shows.forEach(function(s){ aperte[s.id]={o:s.open,d:s.openDet,b:s.openBev} });
+    db.shows=righe.filter(function(r){ return r.payload && r.payload.title }).map(function(r){
+      var s=migrate(r.payload), a=aperte[s.id]; if(a){ s.open=a.o; s.openDet=a.d; s.openBev=a.b } return s; });
+    reteKO=false; sess.last=Date.now(); saveSess();
+    render(); accUI();
+  }).catch(function(err){
+    if(!silenzioso) toast("Server non raggiungibile: "+err.message);
+    reteKO=true; avvisoRete(); throw err;
+  });
+}
+var coda=[], daCancellare=[], inVolo=false, reteKO=false;
+function scrivi(s){ if(coda.indexOf(s)<0) coda.push(s); programma() }
+function elimina(s){ var i=coda.indexOf(s); if(i>-1) coda.splice(i,1); daCancellare.push(s.id); programma() }
+function programma(){ clearTimeout(programma._t); programma._t=setTimeout(flush,250); accUI() }
+function inSospeso(){ return coda.length+daCancellare.length+(inVolo?1:0) }
+function pushShows(lista,keepalive){
+  if(!lista.length) return Promise.resolve();
+  var righe=lista.map(function(s){ return { id:s.id, payload:s, updated_at:new Date().toISOString() } });
+  var blocchi=[]; for(var i=0;i<righe.length;i+=80) blocchi.push(righe.slice(i,i+80));
+  return blocchi.reduce(function(p,b){
+    return p.then(function(){
+      return sbFetch(TAB+"?on_conflict=user_id,id",{ method:"POST", keepalive:!!keepalive,
+        headers:{Prefer:"resolution=merge-duplicates,return=minimal"}, body:JSON.stringify(b) })
+      .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error("scrittura: "+t.slice(0,120)) }) });
+    });
+  },Promise.resolve());
+}
+function deleteIds(ids,keepalive){
+  if(!ids.length) return Promise.resolve();
+  return sbFetch(TAB+"?id=in.("+ids.map(encodeURIComponent).join(",")+")",{method:"DELETE",keepalive:!!keepalive,headers:{Prefer:"return=minimal"}})
+    .then(function(r){ if(!r.ok) return r.text().then(function(t){ throw new Error("cancellazione: "+t.slice(0,120)) }) });
+}
+function flush(keepalive){
+  clearTimeout(programma._t);
+  if(!connesso()){ coda=[]; daCancellare=[]; return Promise.resolve() }
+  if(inVolo && !keepalive){ programma(); return Promise.resolve() }
+  if(!coda.length && !daCancellare.length) return Promise.resolve();
+  var serie=coda.slice(), ids=daCancellare.slice();
+  coda=[]; daCancellare=[]; inVolo=true; accUI();
+  return deleteIds(ids,keepalive).then(function(){ return pushShows(serie,keepalive) })
+    .then(function(){
+      inVolo=false; reteKO=false; sess.last=Date.now(); saveSess(); avvisoRete(); accUI();
+      if(coda.length||daCancellare.length) flush();
+    })
+    .catch(function(err){
+      inVolo=false; reteKO=true; avvisoRete(); accUI();
+      toast("Modifica non salvata: "+(/fetch/i.test(err.message)?"sei senza rete":err.message));
+      coda=[]; daCancellare=[];
+      ricarica(true).catch(function(){});
+    });
+}
+document.addEventListener("visibilitychange",function(){
+  if(document.visibilityState==="hidden") flush(true);
+  else if(connesso()) ricarica(true).catch(function(){});
+});
+window.addEventListener("pagehide",function(){ flush(true) });
+window.addEventListener("online",function(){ if(connesso()) ricarica(true).catch(function(){}) });
+
+var ovAcc=document.getElementById("ovAcc");
+function accUI(){
+  var on=connesso();
+  document.getElementById("accOff").hidden=on;
+  document.getElementById("accOn").hidden=!on;
+  document.getElementById("bAcc").textContent = on ? "☁ "+(sess.email||"connesso") : "☁ Accedi";
+  if(on){
+    var pend=inSospeso();
+    document.getElementById("accWho").innerHTML=
+      "Connesso come <b>"+esc(sess.email||"")+"</b>. I tuoi vini stanno sul server: "+
+      "ogni modifica viene scritta subito e la vedi uguale da ogni dispositivo."+
+      (sess.last?"<br>Ultimo contatto con il server: "+new Date(sess.last).toLocaleString("it-IT")+".":"")+
+      (pend?'<br><b style="color:var(--warn)">Scrittura in corso…</b>':
+       reteKO?'<br><b style="color:var(--warn)">Server non raggiungibile: l\'ultima modifica non è stata salvata.</b>':"");
+  }
+}
+document.getElementById("bAcc").onclick=function(){ accUI(); ovAcc.classList.add("on") };
+document.getElementById("bStart").onclick=function(){ accUI(); ovAcc.classList.add("on") };
+document.getElementById("avvisoLoc").onclick=function(){ ricarica().catch(function(){}) };
+document.getElementById("accClose1").onclick=function(){ ovAcc.classList.remove("on") };
+document.getElementById("accClose2").onclick=function(){ ovAcc.classList.remove("on") };
+ovAcc.addEventListener("click",function(e){ if(e.target===ovAcc) ovAcc.classList.remove("on") });
+function entra(path,etichetta){
+  var e=document.getElementById("accMail").value.trim(), p=document.getElementById("accPass").value;
+  if(!e||!p){ toast("Email e password sono obbligatorie"); return }
+  toast(etichetta+"…");
+  authCall(path,e,p).then(function(r){
+    if(!r.ok || !r.d.access_token){
+      if(r.ok && path.indexOf("signup")>-1 && !r.d.access_token){ toast("Account creato: conferma l'email, poi accedi"); return }
+      toast(erroreAuth(r.d)); return;
+    }
+    sess={access_token:r.d.access_token, refresh_token:r.d.refresh_token, email:(r.d.user&&r.d.user.email)||e, last:0};
+    saveSess(); accUI();
+    document.getElementById("accPass").value="";
+    ovAcc.classList.remove("on");
+    avvio();
+  }).catch(function(){ toast("Server non raggiungibile") });
+}
+document.getElementById("bLogin").onclick=function(){ entra("/auth/v1/token?grant_type=password","Accesso") };
+document.getElementById("bReg").onclick=function(){ entra("/auth/v1/signup","Creazione account") };
+document.getElementById("bWipe").onclick=function(){
+  if(!connesso()) return;
+  if(!confirm("Cancellare tutti i vini del tuo account?\n\nNon esiste un'altra copia: se vuoi conservarli, fai prima un backup.")) return;
+  var b=this; b.textContent="Cancellazione…";
+  sbFetch(TAB+"?id=not.is.null",{method:"DELETE",headers:{Prefer:"return=minimal"}})
+    .then(function(r){
+      b.textContent="Elimina tutti i miei vini";
+      if(!r.ok) throw new Error("rifiutata");
+      coda=[]; daCancellare=[]; db.shows=[]; render();
+      document.getElementById("accLog").innerHTML='<div class="ri" style="cursor:default"><span><span class="n">Tutto cancellato</span><br>'+
+        '<span class="s">L\'account resta: puoi ripartire da zero o ripristinare un backup.</span></span></div>';
+      toast("Vini cancellati");
+    })
+    .catch(function(){ b.textContent="Elimina tutti i miei vini"; toast("Cancellazione non riuscita") });
+};
+document.getElementById("bLogout").onclick=function(){
+  flush().then(function(){ sess=null; saveSess(); db.shows=[]; accUI(); ovAcc.classList.remove("on"); render(); toast("Uscito") });
+};
+document.getElementById("bSync").onclick=function(){
+  var b=this, t=b.textContent; b.textContent="⟳ in corso…";
+  ricarica().then(function(){
+    b.textContent=t;
+    document.getElementById("accLog").innerHTML='<div class="ri" style="cursor:default"><span><span class="n">Riletto dal server</span><br>'+
+      '<span class="s">'+db.shows.length+' vini</span></span></div>';
+    toast("Aggiornato");
+  }).catch(function(err){
+    b.textContent=t;
+    document.getElementById("accLog").innerHTML='<div class="empty" style="text-align:left">Non riuscita: '+esc(err.message)+'</div>';
+  });
+};
+
+(function(){
+  var casella="info", dominio="winelog.it", ind=casella+"@"+dominio;
+  Array.prototype.forEach.call(document.querySelectorAll(".posta"),function(el){
+    var a=document.createElement("a"); a.href="mailto:"+ind; a.textContent=ind; a.style.color="inherit"; el.appendChild(a);
+  });
+})();
+
+/* ============ avvio ============ */
+document.getElementById("q").addEventListener("input",render);
+document.addEventListener("change",function(e){
+  var el=e.target.closest?e.target.closest("select.ordcol"):null; if(!el) return;
+  ordine[el.dataset.col]=el.value; salvaOrdine(); render();
+});
+document.getElementById("fvoto").addEventListener("change",render);
+document.getElementById("ftipo").addEventListener("change",render);
+document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ fermaScan(); ovAdd.classList.remove("on"); ovAcc.classList.remove("on") } });
+loadSess();
+try{ var tsalv=localStorage.getItem(KEY+":tab"); if(COLS.indexOf(tsalv)>-1) tabAttiva=tsalv }catch(e){}
+try{
+  var valid=ORDINI.map(function(o){ return o[0] });
+  var perCol=JSON.parse(localStorage.getItem(KEY+":ord")||"null");
+  if(perCol) COLS.forEach(function(t){ if(valid.indexOf(perCol[t])>-1) ordine[t]=perCol[t] });
+}catch(e){}
+function avvio(){
+  collage(); render(); accUI();
+  if(!connesso()) return;
+  COLS.forEach(function(t){ document.getElementById("c-"+t).querySelector(".clist").innerHTML='<div class="empty">Lettura dal server…</div>' });
+  ricarica().catch(function(){
+    COLS.forEach(function(t){ document.getElementById("c-"+t).querySelector(".clist").innerHTML=
+      '<div class="empty">Server non raggiungibile.<br>Controlla la connessione e premi ⚠ in alto per riprovare.</div>' });
+  });
+}
+avvio();
+})();
+</script>
+</body>
+</html>
