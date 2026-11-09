@@ -218,6 +218,15 @@
   .form .two>div{flex:1; min-width:0}
   .form .mact{margin-top:10px}
 
+  /* ---- scelta etichetta ---- */
+  .imgs{margin-top:9px; border-top:1px solid var(--line); padding-top:8px}
+  .griglia{display:flex; gap:6px; flex-wrap:wrap}
+  .th{width:64px; height:88px; padding:0; border:2px solid var(--line); border-radius:8px; background:#1a1114; cursor:pointer; overflow:hidden}
+  .th:hover{border-color:var(--acc)}
+  .th img{width:100%; height:100%; object-fit:cover; display:block}
+  .th.no{display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:18px}
+  img.pos{object-fit:contain; background:#fff}
+
   /* ---- pannello dettagli ---- */
   .det{margin-top:9px; border-top:1px solid var(--line); padding-top:6px}
   .det label{display:block; font-size:11.3px; color:var(--dim); margin:7px 0 3px}
@@ -357,7 +366,7 @@
   Schede compilate da te; dati dei codici a barre da
   <a href="https://it.openfoodfacts.org/" target="_blank" rel="noopener" style="color:#8f7680">Open Food Facts</a> (ODbL).<br>
   Segnalazioni e suggerimenti: <span class="posta"></span>
-  · <span title="Serve a capire se un dispositivo sta usando una versione vecchia">versione del 9 novembre 2026</span>
+  · <span title="Serve a capire se un dispositivo sta usando una versione vecchia">versione del 9 novembre 2026 · b</span>
 </footer>
 
 <div class="ov" id="ovAdd">
@@ -517,9 +526,9 @@ function migrate(s){
     qty:Math.max(0,parseInt(s.qty,10)||0),
     bevute:Array.isArray(s.bevute)?s.bevute.filter(function(b){ return b && b.d }).map(function(b){
       return {id:b.id||uid(), d:String(b.d).slice(0,10), occ:b.occ||"", pair:b.pair||"", rating:parseInt(b.rating,10)||0, note:b.note||""} }):[],
-    rating:parseInt(s.rating,10)||0, note:s.note||"",
+    rating:parseInt(s.rating,10)||0, note:s.note||"", img:s.img||"", thumb:s.thumb||"",
     added:s.added||Date.now(), updated:s.updated||Date.now(),
-    open:!!s.open, openDet:false, openBev:false };
+    open:!!s.open, openDet:false, openBev:false, openImg:false };
   o.bevute.sort(function(a,b){ return b.d.localeCompare(a.d) });
   return o;
 }
@@ -686,6 +695,7 @@ function detailHtml(s){
     '<div><label>Dove comprato</label><input class="fld" data-f="shop" data-i="'+s.id+'" list="dlShop" value="'+esc(s.shop)+'"></div></div>'+
     '<div class="two"><div><label>Codice a barre</label><input class="fld" data-f="code" data-i="'+s.id+'" value="'+esc(s.code)+'" inputmode="numeric"></div>'+
     '<div style="flex:0 0 110px"><label>Bottiglie</label><input class="fld" data-f="qty" data-i="'+s.id+'" value="'+s.qty+'" inputmode="numeric"></div></div>'+
+    '<label>Indirizzo di una foto dell\'etichetta (facoltativo)</label><input class="fld" data-f="img" data-i="'+s.id+'" value="'+esc(s.img||"")+'" placeholder="https://…jpg — incolla l\'indirizzo di un\'immagine trovata in rete">'+
     '<label>Nota</label><textarea class="fld" rows="2" data-f="note" data-i="'+s.id+'" placeholder="Chi te l\'ha consigliato, dove l\'hai scoperto…">'+esc(s.note||"")+'</textarea>'+
     '<div class="fin">Aggiunto il '+new Date(s.added).toLocaleDateString("it-IT")+'</div>'+
     '</div>';
@@ -696,7 +706,9 @@ function card(s){
   var h='<div class="'+cls+'" data-id="'+s.id+'">';
   h+='<button class="del" data-a="del" data-i="'+s.id+'" title="Rimuovi dall\'elenco">✕</button>';
   h+='<div class="top">';
-  h+='<div class="pos ph" style="background:'+TIPI[s.type]+'; color:'+(s.type==="bianco"||s.type==="bollicine"||s.type==="rosato"?"#3a1a22":"#fff")+'" title="'+TIPO_NOME[s.type]+'">'+esc((s.name||"?").charAt(0).toUpperCase())+'</div>';
+  var ph='<div class="pos ph" style="background:'+TIPI[s.type]+'; color:'+(s.type==="bianco"||s.type==="bollicine"||s.type==="rosato"?"#3a1a22":"#fff")+'" title="'+TIPO_NOME[s.type]+'">'+esc((s.name||"?").charAt(0).toUpperCase())+'</div>';
+  // se la foto non si carica più (il negozio l'ha tolta) riappare il riquadro colorato
+  h+=s.img?'<img class="pos" src="'+esc(s.img)+'" alt="" loading="lazy" title="Etichetta" onerror="this.hidden=true;this.nextElementSibling.hidden=false">'+ph.replace('class="pos ph"','class="pos ph" hidden'):ph;
   h+='<div class="body">';
   h+='<div class="art">'+esc(s.producer||"produttore sconosciuto")+'</div>';
   h+='<div class="ttl">'+esc(s.name)+(s.vintage?' <span class="yr">'+esc(s.vintage)+'</span>':'')+'</div>';
@@ -711,6 +723,8 @@ function card(s){
      '<span class="qta" title="Bottiglie in cantina"><button data-a="meno" data-i="'+s.id+'">−</button><b>'+s.qty+'</b><button data-a="piu" data-i="'+s.id+'">+</button> bott.</span>'+
      '<button class="btn sm" data-a="open" data-i="'+s.id+'">'+(s.open?"▴":"▾")+' Bevute'+(s.bevute.length?' ('+s.bevute.length+')':'')+'</button>'+
      '<button class="btn sm" data-a="edit" data-i="'+s.id+'">'+(s.openDet?"▴":"▾")+' Dettagli</button>'+
+     '<a class="info" href="https://www.vivino.com/search/wines?q='+encodeURIComponent(s.producer+" "+s.name)+'" target="_blank" rel="noopener" title="Cerca su Vivino: punteggi e note">↗ Vivino</a>'+
+     '<a class="info" href="https://www.tannico.it/catalogsearch/result/?q='+encodeURIComponent(s.producer+" "+s.name)+'" target="_blank" rel="noopener" title="Cerca su Tannico">↗ Tannico</a>'+
      '</div>';
   if(s.note) h+='<div class="note">'+esc(s.note)+'</div>';
   h+='</div></div>';
@@ -808,7 +822,7 @@ document.getElementById("bSave").onclick=function(){
   addShow({ producer:prod, name:name, vintage:document.getElementById("aYear").value.trim().slice(0,4),
     type:document.getElementById("aType").value, denom:document.getElementById("aDenom").value.trim(),
     grape:document.getElementById("aGrape").value.trim(), price:parseFloat(document.getElementById("aPrice").value.replace(",","."))||0,
-    shop:document.getElementById("aShop").value.trim(), code:document.getElementById("aCode").value.trim(),
+    shop:document.getElementById("aShop").value.trim(), code:document.getElementById("aCode").value.trim(), img:offImg,
     qty:dove==="cellar"?Math.max(1,parseInt(document.getElementById("aQta").value,10)||1):0 });
 };
 /* vitigno suggerito dalla denominazione, se il campo è vuoto */
@@ -828,12 +842,14 @@ document.getElementById("aDenom").addEventListener("change",function(){
 
 /* -- codice a barre: Open Food Facts (libero), copre soprattutto la grande distribuzione -- */
 function getJSON(url,opt){ return fetch(url,opt).then(function(r){ if(!r.ok) throw new Error("http "+r.status); return r.json() }) }
+var offImg="";     // foto dell'etichetta trovata con il codice a barre, se c'è
 function cercaCodice(code){
+  offImg="";
   code=String(code||"").replace(/\D/g,""); if(code.length<8){ toast("Codice troppo corto"); return }
   var hint=document.getElementById("aHint"); hint.textContent="Cerco il codice "+code+"…";
   var dup=db.shows.filter(function(s){ return s.code===code })[0];
   if(dup){ hint.textContent="Questo codice è già in lista: «"+titolo(dup)+"» ("+dup.producer+")"; return }
-  getJSON("https://world.openfoodfacts.org/api/v2/product/"+code+".json?fields=product_name,product_name_it,brands,quantity,categories_tags,labels_tags,generic_name")
+  getJSON("https://world.openfoodfacts.org/api/v2/product/"+code+".json?fields=product_name,product_name_it,brands,quantity,categories_tags,labels_tags,generic_name,image_front_url")
     .then(function(j){
       var p=j.product; if(j.status!==1||!p){ hint.textContent="Codice non in archivio: compila a mano, il codice resta salvato."; return }
       var nome=p.product_name_it||p.product_name||"", marca=(p.brands||"").split(",")[0].trim();
@@ -845,7 +861,8 @@ function cercaCodice(code){
       else if(/white-wine|vini-bianchi/.test(cat)) document.getElementById("aType").value="bianco";
       else if(/rose/.test(cat)) document.getElementById("aType").value="rosato";
       else if(/red-wine|vini-rossi/.test(cat)) document.getElementById("aType").value="rosso";
-      hint.textContent="Trovato su Open Food Facts: controlla i campi e completa.";
+      offImg=p.image_front_url||"";
+      hint.textContent="Trovato su Open Food Facts"+(offImg?" (con foto)":"")+": controlla i campi e completa.";
       document.getElementById("aDenom").dispatchEvent(new Event("change"));
     }).catch(function(){ hint.textContent="Open Food Facts non raggiungibile: compila a mano." });
 }
@@ -876,7 +893,7 @@ function addShow(o){
   var dup=db.shows.filter(function(s){ return s.producer.toLowerCase()===o.producer.toLowerCase() && s.name.toLowerCase()===o.name.toLowerCase() && (s.vintage||"")===(o.vintage||"") })[0];
   if(dup){ toast("«"+titolo(dup)+"» di "+dup.producer+" è già in lista"); ovAdd.classList.remove("on"); return }
   var s=migrate({ id:uid(), producer:o.producer, name:o.name, vintage:o.vintage, type:o.type, denom:o.denom, grape:o.grape,
-                  price:o.price, shop:o.shop, code:o.code, qty:o.qty, bevute:[], rating:0, note:"", added:Date.now(), updated:Date.now() });
+                  price:o.price, shop:o.shop, code:o.code, img:o.img||"", qty:o.qty, bevute:[], rating:0, note:"", added:Date.now(), updated:Date.now() });
   db.shows.push(s); tocca(s,true);
   fermaScan(); ovAdd.classList.remove("on");
   render();
@@ -976,9 +993,9 @@ function ricarica(silenzioso){
   if(!connesso()) return Promise.reject(new Error("non connesso"));
   if(coda.length || inVolo) return Promise.resolve();
   return pullRemote().then(function(righe){
-    var aperte={}; db.shows.forEach(function(s){ aperte[s.id]={o:s.open,d:s.openDet,b:s.openBev} });
-    db.shows=righe.filter(function(r){ return r.payload && r.payload.title }).map(function(r){
-      var s=migrate(r.payload), a=aperte[s.id]; if(a){ s.open=a.o; s.openDet=a.d; s.openBev=a.b } return s; });
+    var aperte={}; db.shows.forEach(function(s){ aperte[s.id]={o:s.open,d:s.openDet,b:s.openBev,i:s.openImg} });
+    db.shows=righe.filter(function(r){ return r.payload && (r.payload.name||r.payload.title) }).map(function(r){
+      var s=migrate(r.payload), a=aperte[s.id]; if(a){ s.open=a.o; s.openDet=a.d; s.openBev=a.b; s.openImg=a.i } return s; });
     reteKO=false; sess.last=Date.now(); saveSess();
     render(); accUI();
   }).catch(function(err){
