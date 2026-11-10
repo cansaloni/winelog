@@ -227,6 +227,10 @@
   .th.no{display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:18px}
   img.pos{object-fit:contain; background:#fff}
 
+  .chk{display:inline-flex; align-items:center; gap:5px; font-size:12.5px; color:var(--dim); white-space:nowrap; cursor:pointer; flex:none}
+  .ri .pal2{width:10px; height:10px; border-radius:50%; flex:none; margin-right:2px}
+  .ri .s{color:var(--dim); font-size:12px}
+
   /* ---- pannello dettagli ---- */
   .det{margin-top:9px; border-top:1px solid var(--line); padding-top:6px}
   .det label{display:block; font-size:11.3px; color:var(--dim); margin:7px 0 3px}
@@ -320,8 +324,8 @@
         Da provare, in cantina (con il conto delle bottiglie) e bevuti.
         Ogni volta che ne stappi una, la bottiglia scala e la bevuta si segna.</div>
       <div><b>Si compila in fretta</b>
-        Produttore, nome, annata, tipo; il resto è facoltativo e ti viene suggerito
-        da quello che hai già scritto. Col codice a barre, dove c'è, ancora meno.</div>
+        Cerchi cantina o vino in un archivio di 100.000 etichette e la scheda si compila
+        da sola; tu aggiungi annata, prezzo e dove l'hai preso. E se manca, lo scrivi tu.</div>
       <div><b>Ogni bevuta, un ricordo</b>
         Data, occasione, abbinamento, voto e due righe. Il vino tiene la media
         delle bevute, e il 5+ dorato è per quelli che non dimentichi.</div>
@@ -363,28 +367,41 @@
 </main>
 
 <footer style="padding:4px 14px 70px; color:#8f7680; font-size:11.5px; line-height:1.6">
-  Schede compilate da te; dati dei codici a barre da
+  Archivio vini: <a href="https://github.com/rogerioxavier/X-Wines" target="_blank" rel="noopener" style="color:#8f7680">X-Wines</a>
+  (de Azambuja, Morais, Filipe 2023 — CC0); codici a barre da
   <a href="https://it.openfoodfacts.org/" target="_blank" rel="noopener" style="color:#8f7680">Open Food Facts</a> (ODbL).<br>
   Segnalazioni e suggerimenti: <span class="posta"></span>
-  · <span title="Serve a capire se un dispositivo sta usando una versione vecchia">versione del 9 novembre 2026 · b</span>
+  · <span title="Serve a capire se un dispositivo sta usando una versione vecchia">versione del 10 novembre 2026</span>
 </footer>
 
 <div class="ov" id="ovAdd">
   <div class="modal">
     <h2>Aggiungi un vino</h2>
     <div class="rowf">
-      <input id="aCode" class="fld" placeholder="Codice a barre (facoltativo)" inputmode="numeric" autocomplete="off">
-      <button class="btn" id="bScan" style="flex:none" title="Inquadra il codice a barre con la fotocamera">📷 Scansiona</button>
-      <button class="btn" id="bCode" style="flex:none" title="Cerca il codice su Open Food Facts">Cerca</button>
+      <input id="sq" class="fld" placeholder="Cerca: cantina, vino, denominazione… (es. ferrari perlé)" autocomplete="off">
+      <label class="chk" title="Cerca anche fra i vini esteri (scarica un archivio più grande)"><input type="checkbox" id="sqMondo"> estero</label>
     </div>
-    <div class="hint" id="aHint">Se la bottiglia ha il codice a barre prova con quello: se è in archivio, i campi si compilano da soli.</div>
+    <div class="res" id="res"></div>
+    <div class="hint" id="hintProv">Archivio di 19.000 etichette italiane (100.000 col mondo intero): scegli e la scheda si compila da sola.</div>
+    <div class="mact" id="addMact">
+      <button class="btn gh" id="bManualToggle" title="Se il vino non è in archivio">Non lo trovo, compilo io</button>
+      <span class="sp"></span>
+      <button class="btn gh" id="bCancel0">Chiudi</button>
+    </div>
+    <div id="modulo" hidden style="border-top:1px solid var(--line); margin-top:12px; padding-top:4px">
+    <div class="hint" id="aHint"></div>
+    <div class="rowf">
+      <input id="aCode" class="fld" placeholder="Codice a barre (facoltativo)" inputmode="numeric" autocomplete="off">
+      <button class="btn" id="bScan" style="flex:none" title="Inquadra il codice a barre con la fotocamera">📷</button>
+      <button class="btn" id="bCode" style="flex:none" title="Cerca il codice su Open Food Facts">Cerca codice</button>
+    </div>
     <div id="scanBox" hidden style="margin-top:8px"><video id="scanVideo" playsinline muted style="width:100%; border-radius:10px; background:#000; max-height:40vh"></video></div>
     <div class="rowf">
       <div><label>Produttore *</label><input id="aProd" class="fld" list="dlProd" placeholder="Es. Brezza" autocomplete="off"></div>
       <div><label>Nome *</label><input id="aName" class="fld" placeholder="Es. Barolo Cannubi" autocomplete="off"></div>
     </div>
     <div class="rowf">
-      <div><label>Annata</label><input id="aYear" class="fld" placeholder="2019" inputmode="numeric" autocomplete="off"></div>
+      <div><label>Annata</label><input id="aYear" class="fld" list="dlYear" placeholder="2019" inputmode="numeric" autocomplete="off"></div>
       <div><label>Tipo</label>
         <select id="aType" class="fld">
           <option value="rosso">Rosso</option><option value="bianco">Bianco</option><option value="rosato">Rosato</option>
@@ -392,7 +409,7 @@
         </select></div>
     </div>
     <div class="rowf">
-      <div><label>Denominazione</label><input id="aDenom" class="fld" list="dlDenom" placeholder="Barolo DOCG" autocomplete="off"></div>
+      <div><label>Denominazione / regione</label><input id="aDenom" class="fld" list="dlDenom" placeholder="Barolo DOCG" autocomplete="off"></div>
       <div><label>Vitigno</label><input id="aGrape" class="fld" list="dlGrape" placeholder="Nebbiolo" autocomplete="off"></div>
     </div>
     <div class="rowf">
@@ -412,8 +429,10 @@
       <button class="btn gh" id="bCancel">Chiudi</button>
       <button class="btn p" id="bSave">Aggiungi</button>
     </div>
+    </div>
   </div>
 </div>
+<datalist id="dlYear"></datalist>
 <datalist id="dlProd"></datalist><datalist id="dlDenom"></datalist><datalist id="dlGrape"></datalist>
 <datalist id="dlShop"></datalist><datalist id="dlOcc"></datalist><datalist id="dlPair"></datalist>
 
@@ -527,6 +546,7 @@ function migrate(s){
     bevute:Array.isArray(s.bevute)?s.bevute.filter(function(b){ return b && b.d }).map(function(b){
       return {id:b.id||uid(), d:String(b.d).slice(0,10), occ:b.occ||"", pair:b.pair||"", rating:parseInt(b.rating,10)||0, note:b.note||""} }):[],
     rating:parseInt(s.rating,10)||0, note:s.note||"", img:s.img||"", thumb:s.thumb||"",
+    abb:Array.isArray(s.abb)?s.abb.slice(0,12):[], abv:parseFloat(s.abv)||0,
     added:s.added||Date.now(), updated:s.updated||Date.now(),
     open:!!s.open, openDet:false, openBev:false, openImg:false };
   o.bevute.sort(function(a,b){ return b.d.localeCompare(a.d) });
@@ -677,7 +697,7 @@ function formBevutaHtml(s){
   return '<div class="form" data-form="'+s.id+'">'+
     '<div class="two"><div><label>Quando</label><input class="fld" type="date" data-bf="d" value="'+oggi()+'"></div>'+
     '<div><label>Occasione</label><input class="fld" data-bf="occ" list="dlOcc" placeholder="Cena a casa, ristorante…" autocomplete="off"></div></div>'+
-    '<div class="two"><div><label>Abbinamento</label><input class="fld" data-bf="pair" list="dlPair" placeholder="Con cosa l\'hai bevuto" autocomplete="off"></div>'+
+    '<div class="two"><div><label>Abbinamento'+(s.abb&&s.abb.length?' <span style="opacity:.7">(consigliati: '+esc(s.abb.slice(0,4).join(", "))+')</span>':'')+'</label><input class="fld" data-bf="pair" list="dlPair" placeholder="Con cosa l\'hai bevuto" autocomplete="off"></div>'+
     '<div><label>Voto</label><div style="padding-top:6px">'+rateHtml(s.id,0,'data-nuova="1"')+'</div></div></div>'+
     '<label>Due righe</label><textarea class="fld" rows="2" data-bf="note" placeholder="Com\'era, con chi, cosa ti ha lasciato…"></textarea>'+
     '<div class="mact"><span class="sp"></span><button class="btn gh" data-a="annullabev" data-i="'+s.id+'">Annulla</button>'+
@@ -713,7 +733,7 @@ function card(s){
   h+='<div class="art">'+esc(s.producer||"produttore sconosciuto")+'</div>';
   h+='<div class="ttl">'+esc(s.name)+(s.vintage?' <span class="yr">'+esc(s.vintage)+'</span>':'')+'</div>';
   h+='<div class="meta"><span class="tipo" style="background:'+TIPI[s.type]+'"></span>'+TIPO_NOME[s.type]+
-     (s.denom?' · '+esc(s.denom):'')+(s.grape?' · '+esc(s.grape):'')+(s.price?' · '+euro(s.price):'')+
+     (s.denom?' · '+esc(s.denom):'')+(s.grape?' · '+esc(s.grape):'')+(s.abv?' · '+s.abv+'%':'')+(s.price?' · '+euro(s.price):'')+
      ' · '+rateHtml(s.id,s.rating)+
      (md?'<span class="media">media bevute '+md.m.toFixed(1).replace(".",",")+' ('+md.n+')'+
          (Math.round(md.m)!==Math.min(s.rating,5)||!s.rating?'<button data-a="usamedia" data-i="'+s.id+'" title="Dai al vino il voto medio delle bevute">usa</button>':'')+'</span>':'')+
@@ -802,18 +822,114 @@ document.addEventListener("change",function(ev){
 
 /* ============ aggiunta ============ */
 var ovAdd=document.getElementById("ovAdd");
+var scelto=null;      // voce del catalogo scelta, per riempire abbinamenti e note della scheda
 function openAdd(){
   ovAdd.classList.add("on");
-  ["aCode","aProd","aName","aYear","aDenom","aGrape","aPrice","aShop"].forEach(function(id){ document.getElementById(id).value="" });
+  scelto=null;
+  ["aCode","aProd","aName","aYear","aDenom","aGrape","aPrice","aShop","sq"].forEach(function(id){ document.getElementById(id).value="" });
   document.getElementById("aType").value="rosso"; document.getElementById("aDove").value="plan"; document.getElementById("aQta").value="1";
   document.getElementById("aQta").hidden=true;
-  document.getElementById("aHint").textContent="Se la bottiglia ha il codice a barre prova con quello: se è in archivio, i campi si compilano da soli.";
+  document.getElementById("res").innerHTML=""; document.getElementById("dlYear").innerHTML="";
+  document.getElementById("hintProv").textContent="Archivio di 19.000 etichette italiane (100.000 col mondo intero): scegli e la scheda si compila da sola.";
+  document.getElementById("modulo").hidden=true; document.getElementById("addMact").hidden=false;
+  document.getElementById("aHint").textContent="";
   fermaScan();
-  setTimeout(function(){ document.getElementById("aProd").focus() },50);
+  setTimeout(function(){ document.getElementById("sq").focus() },50);
+  caricaCatalogo("it");
+}
+function apriModulo(testo){
+  document.getElementById("modulo").hidden=false; document.getElementById("addMact").hidden=true;
+  document.getElementById("aHint").textContent=testo||"";
 }
 document.getElementById("bAdd").onclick=openAdd;
 document.getElementById("bCancel").onclick=function(){ fermaScan(); ovAdd.classList.remove("on") };
+document.getElementById("bCancel0").onclick=function(){ fermaScan(); ovAdd.classList.remove("on") };
+document.getElementById("bManualToggle").onclick=function(){
+  apriModulo("Compila almeno produttore e nome. Se la bottiglia ha il codice a barre prova con quello.");
+  var q=document.getElementById("sq").value.trim(); if(q && !document.getElementById("aName").value) document.getElementById("aName").value=q;
+  document.getElementById("aProd").focus();
+};
 ovAdd.addEventListener("click",function(e){ if(e.target===ovAdd){ fermaScan(); ovAdd.classList.remove("on") } });
+
+/* ---- catalogo X-Wines (CC0): 100.000 etichette, compattato in due file;
+   l'Italia si carica subito, il resto del mondo solo se lo chiedi o se in
+   Italia non si trova niente. Cercato in locale, istantaneo e senza quote. ---- */
+var CAT={it:null,mondo:null}, catIn={};
+function caricaCatalogo(q){
+  if(CAT[q] || catIn[q]) return catIn[q]||Promise.resolve(CAT[q]);
+  catIn[q]=fetch("catalogo-"+q+".json").then(function(r){ if(!r.ok) throw new Error("http "+r.status); return r.json() }).then(function(d){
+    d.v.forEach(function(v){ v._s=norm(v[0]+" "+d.w[v[1]]+" "+d.r[v[4]]+" "+v[3].map(function(i){ return d.g[i] }).join(" ")) });
+    CAT[q]=d; catIn[q]=null; return d;
+  }).catch(function(e){ catIn[q]=null; throw e });
+  return catIn[q];
+}
+function norm(s){ return String(s||"").toLowerCase().replace(/[’']/g,"").replace(/[àáâä]/g,"a").replace(/[èéêë]/g,"e").replace(/[ìíîï]/g,"i").replace(/[òóôö]/g,"o").replace(/[ùúûü]/g,"u").replace(/[^a-z0-9]+/g," ").trim() }
+var TIPO_COD={r:"rosso",b:"bianco",R:"rosato",d:"dolce",S:"bollicine"};
+function cercaCatalogo(q,d){
+  var tok=norm(q).split(" ").filter(function(w){ return w.length>1 }); if(!tok.length) return [];
+  var out=[];
+  d.v.forEach(function(v){
+    var p=0, s=v._s;
+    for(var i=0;i<tok.length;i++){ if(s.indexOf(tok[i])<0) return; p+=10/tok.length }
+    var w=norm(d.w[v[1]]), n=norm(v[0]);
+    if(w===norm(q) || n===norm(q)) p+=4;
+    if(tok.some(function(x){ return w.split(" ").indexOf(x)>-1 })) p+=2;      // parola intera della cantina
+    if(v[10]>=2015) p+=.5;                                                   // ancora in produzione
+    out.push([p,v]);
+  });
+  out.sort(function(a,b){ return b[0]-a[0] || a[1][0].localeCompare(b[1][0]) });
+  return out.slice(0,40).map(function(x){ return x[1] });
+}
+function cerca(){
+  var q=document.getElementById("sq").value.trim(), res=document.getElementById("res"), hint=document.getElementById("hintProv");
+  if(q.length<2){ res.innerHTML=""; return }
+  var mio=++cerca._n, mondo=document.getElementById("sqMondo").checked;
+  res.innerHTML='<div class="empty">Cerco…</div>';
+  caricaCatalogo("it").then(function(it){
+    var lista=cercaCatalogo(q,it).map(function(v){ return {v:v,d:it} });
+    if(mondo || lista.length<3){
+      hint.textContent=mondo?"Cerco anche all'estero…":"Pochi risultati in Italia: guardo anche all'estero…";
+      return caricaCatalogo("mondo").then(function(m){
+        var l2=cercaCatalogo(q,m).map(function(v){ return {v:v,d:m} });
+        return lista.concat(l2).slice(0,40);
+      }).catch(function(){ return lista });
+    }
+    return lista;
+  }).then(function(lista){
+    if(mio!==cerca._n) return;
+    cerca._ultimi=lista;
+    hint.textContent=lista.length?"Scegli il vino: la scheda si compila da sola, poi aggiungi annata e il resto.":"";
+    if(!lista.length){ res.innerHTML='<div class="empty">Nessun vino trovato per «'+esc(q)+'». Puoi compilarlo tu con «Non lo trovo».</div>'; return }
+    res.innerHTML=lista.map(function(x,i){
+      var v=x.v, d=x.d, tipo=TIPO_COD[v[2]]||"rosso";
+      return '<button class="ri" data-r="'+i+'"><span class="pal2" style="background:'+TIPI[tipo]+'"></span>'+
+        '<span style="flex:1;min-width:0"><span class="n">'+esc(v[0])+'</span><br>'+
+        '<span class="s">'+esc(d.w[v[1]])+' · '+esc(d.r[v[4]])+(v[5]!=="IT"?' ('+esc(v[5])+')':'')+
+        (v[3].length?' · '+esc(v[3].slice(0,3).map(function(i){ return d.g[i] }).join(", ")):'')+
+        (v[10]?' · '+(v[9]===v[10]?v[9]:v[9]+"–"+v[10]):'')+'</span></span></button>';
+    }).join("");
+  }).catch(function(){ if(mio===cerca._n) res.innerHTML='<div class="empty">Archivio non raggiungibile: compila a mano.</div>' });
+}
+cerca._n=0;
+document.getElementById("sq").addEventListener("input",function(){ clearTimeout(cerca._t); cerca._t=setTimeout(cerca,250) });
+document.getElementById("sqMondo").addEventListener("change",cerca);
+document.getElementById("res").addEventListener("click",function(e){
+  var b=e.target.closest("[data-r]"); if(!b) return;
+  var x=cerca._ultimi[Number(b.dataset.r)]; if(!x) return;
+  var v=x.v, d=x.d;
+  scelto={ abb:v[6].map(function(i){ return d.h[i] }), abv:v[7], corpo:["molto leggero","leggero","medio","pieno","molto pieno"][v[8]]||"" };
+  document.getElementById("aProd").value=d.w[v[1]];
+  document.getElementById("aName").value=v[0];
+  document.getElementById("aType").value=TIPO_COD[v[2]]||"rosso";
+  document.getElementById("aDenom").value=d.r[v[4]];
+  document.getElementById("aGrape").value=v[3].map(function(i){ return d.g[i] }).join(", ");
+  var anni=[]; for(var y=v[10];y>=v[9]&&anni.length<40;y--) anni.push(y);
+  document.getElementById("dlYear").innerHTML=anni.map(function(y){ return '<option value="'+y+'">' }).join("");
+  document.getElementById("aYear").value="";
+  apriModulo("Scheda compilata dall\'archivio"+(scelto.abb.length?" · si abbina a: "+scelto.abb.slice(0,4).join(", "):"")+(v[7]?" · "+v[7]+"% vol":"")+". Aggiungi l\'annata e il resto.");
+  document.getElementById("res").innerHTML=""; document.getElementById("hintProv").textContent="";
+  document.getElementById("aYear").focus();
+});
 document.getElementById("aDove").onchange=function(){ document.getElementById("aQta").hidden=this.value!=="cellar" };
 document.getElementById("bSave").onclick=function(){
   var prod=document.getElementById("aProd").value.trim(), name=document.getElementById("aName").value.trim();
@@ -823,6 +939,7 @@ document.getElementById("bSave").onclick=function(){
     type:document.getElementById("aType").value, denom:document.getElementById("aDenom").value.trim(),
     grape:document.getElementById("aGrape").value.trim(), price:parseFloat(document.getElementById("aPrice").value.replace(",","."))||0,
     shop:document.getElementById("aShop").value.trim(), code:document.getElementById("aCode").value.trim(), img:offImg,
+    abb:scelto?scelto.abb:[], abv:scelto?scelto.abv:0,
     qty:dove==="cellar"?Math.max(1,parseInt(document.getElementById("aQta").value,10)||1):0 });
 };
 /* vitigno suggerito dalla denominazione, se il campo è vuoto */
@@ -893,7 +1010,7 @@ function addShow(o){
   var dup=db.shows.filter(function(s){ return s.producer.toLowerCase()===o.producer.toLowerCase() && s.name.toLowerCase()===o.name.toLowerCase() && (s.vintage||"")===(o.vintage||"") })[0];
   if(dup){ toast("«"+titolo(dup)+"» di "+dup.producer+" è già in lista"); ovAdd.classList.remove("on"); return }
   var s=migrate({ id:uid(), producer:o.producer, name:o.name, vintage:o.vintage, type:o.type, denom:o.denom, grape:o.grape,
-                  price:o.price, shop:o.shop, code:o.code, img:o.img||"", qty:o.qty, bevute:[], rating:0, note:"", added:Date.now(), updated:Date.now() });
+                  price:o.price, shop:o.shop, code:o.code, img:o.img||"", abb:o.abb||[], abv:o.abv||0, qty:o.qty, bevute:[], rating:0, note:"", added:Date.now(), updated:Date.now() });
   db.shows.push(s); tocca(s,true);
   fermaScan(); ovAdd.classList.remove("on");
   render();
