@@ -157,7 +157,9 @@
   .ttl{font-weight:600; font-size:14.2px; line-height:1.25; overflow-wrap:anywhere; padding-right:20px}
   .yr{color:var(--dim); font-weight:400; font-size:12.5px}
   .meta{color:var(--dim); font-size:12.3px; margin-top:3px; font-variant-numeric:tabular-nums}
-  .acts{display:flex; gap:5px; margin-top:7px; flex-wrap:wrap}
+  .acts{display:flex; gap:4px; margin-top:7px; flex-wrap:wrap}
+  .acts .btn.sm{padding:4px 7px}
+  .acts .info{padding:4px 7px}
   .note{color:var(--warn); font-size:12.3px; margin-top:5px; font-style:italic; overflow-wrap:anywhere}
   /* voto: stelle in ordine inverso nel codice, così il passaggio del mouse
      su una illumina anche quelle alla sua sinistra */
@@ -371,7 +373,7 @@
   (de Azambuja, Morais, Filipe 2023 — CC0); codici a barre da
   <a href="https://it.openfoodfacts.org/" target="_blank" rel="noopener" style="color:#8f7680">Open Food Facts</a> (ODbL).<br>
   Segnalazioni e suggerimenti: <span class="posta"></span>
-  · <span title="Serve a capire se un dispositivo sta usando una versione vecchia">versione del 10 novembre 2026 · c</span>
+  · <span title="Serve a capire se un dispositivo sta usando una versione vecchia">versione del 10 novembre 2026 · d</span>
 </footer>
 
 <div class="ov" id="ovAdd">
@@ -727,7 +729,8 @@ function card(s){
   var h='<div class="'+cls+'" data-id="'+s.id+'">';
   h+='<button class="del" data-a="del" data-i="'+s.id+'" title="Rimuovi dall\'elenco">✕</button>';
   h+='<div class="top">';
-  var ph='<div class="pos ph" style="background:'+TIPI[s.type]+'; color:'+(s.type==="bianco"||s.type==="bollicine"||s.type==="rosato"?"#3a1a22":"#fff")+'" title="'+TIPO_NOME[s.type]+'">'+esc((s.name||"?").charAt(0).toUpperCase())+'</div>';
+  var iniz=((s.name||"").match(/[A-Za-zÀ-ÿ0-9]/)||["?"])[0].toUpperCase();
+  var ph='<div class="pos ph" style="background:'+TIPI[s.type]+'; color:'+(s.type==="bianco"||s.type==="bollicine"||s.type==="rosato"?"#3a1a22":"#fff")+'" title="'+TIPO_NOME[s.type]+'">'+esc(iniz)+'</div>';
   // se la foto non si carica più (il negozio l'ha tolta) riappare il riquadro colorato
   h+=s.img?'<img class="pos" src="'+esc(s.img)+'" alt="" loading="lazy" title="Etichetta" onerror="this.hidden=true;this.nextElementSibling.hidden=false">'+ph.replace('class="pos ph"','class="pos ph" hidden'):ph;
   h+='<div class="body">';
@@ -741,10 +744,10 @@ function card(s){
      '</div>';
   h+='<div class="acts">'+
      '<button class="btn sm" data-a="bevuto" data-i="'+s.id+'" title="Segna una bevuta">🍷 Bevuto</button>'+
-     '<span class="qta" title="Bottiglie in cantina"><button data-a="meno" data-i="'+s.id+'">−</button><b>'+s.qty+'</b><button data-a="piu" data-i="'+s.id+'">+</button> bott.</span>'+
-     '<button class="btn sm" data-a="open" data-i="'+s.id+'">'+(s.open?"▴":"▾")+' Bevute'+(s.bevute.length?' ('+s.bevute.length+')':'')+'</button>'+
+     '<span class="qta" title="Bottiglie in cantina"><button data-a="meno" data-i="'+s.id+'" title="Una bottiglia in meno">−</button><b>'+s.qty+'</b><button data-a="piu" data-i="'+s.id+'" title="Una bottiglia in più">+</button>🍾</span>'+
+     '<button class="btn sm" data-a="open" data-i="'+s.id+'">'+(s.open?"▴":"▾")+' Bevute'+(s.bevute.length?' '+s.bevute.length:'')+'</button>'+
      '<button class="btn sm" data-a="edit" data-i="'+s.id+'">'+(s.openDet?"▴":"▾")+' Dettagli</button>'+
-     '<button class="btn sm" data-a="foto" data-i="'+s.id+'" title="Scatta o scegli la foto dell\'etichetta">📷 Foto</button>'+
+     '<button class="btn sm" data-a="foto" data-i="'+s.id+'" title="Scatta o scegli la foto dell\'etichetta">📷</button>'+
      '<a class="info" href="https://www.vivino.com/search/wines?q='+encodeURIComponent(s.producer+" "+s.name)+'" target="_blank" rel="noopener" title="Cerca su Vivino: punteggi e note">↗ Vivino</a>'+
      '<a class="info" href="https://www.tannico.it/search?q='+encodeURIComponent(s.producer+" "+s.name)+'&options%5Bprefix%5D=last" target="_blank" rel="noopener" title="Cerca su Tannico">↗ Tannico</a>'+
      '</div>';
