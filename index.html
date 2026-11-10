@@ -371,7 +371,7 @@
   (de Azambuja, Morais, Filipe 2023 — CC0); codici a barre da
   <a href="https://it.openfoodfacts.org/" target="_blank" rel="noopener" style="color:#8f7680">Open Food Facts</a> (ODbL).<br>
   Segnalazioni e suggerimenti: <span class="posta"></span>
-  · <span title="Serve a capire se un dispositivo sta usando una versione vecchia">versione del 10 novembre 2026</span>
+  · <span title="Serve a capire se un dispositivo sta usando una versione vecchia">versione del 10 novembre 2026 · c</span>
 </footer>
 
 <div class="ov" id="ovAdd">
@@ -476,6 +476,7 @@
   </div>
 </div>
 
+<input type="file" id="fFoto" accept="image/*" hidden>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -743,8 +744,9 @@ function card(s){
      '<span class="qta" title="Bottiglie in cantina"><button data-a="meno" data-i="'+s.id+'">−</button><b>'+s.qty+'</b><button data-a="piu" data-i="'+s.id+'">+</button> bott.</span>'+
      '<button class="btn sm" data-a="open" data-i="'+s.id+'">'+(s.open?"▴":"▾")+' Bevute'+(s.bevute.length?' ('+s.bevute.length+')':'')+'</button>'+
      '<button class="btn sm" data-a="edit" data-i="'+s.id+'">'+(s.openDet?"▴":"▾")+' Dettagli</button>'+
+     '<button class="btn sm" data-a="foto" data-i="'+s.id+'" title="Scatta o scegli la foto dell\'etichetta">📷 Foto</button>'+
      '<a class="info" href="https://www.vivino.com/search/wines?q='+encodeURIComponent(s.producer+" "+s.name)+'" target="_blank" rel="noopener" title="Cerca su Vivino: punteggi e note">↗ Vivino</a>'+
-     '<a class="info" href="https://www.tannico.it/catalogsearch/result/?q='+encodeURIComponent(s.producer+" "+s.name)+'" target="_blank" rel="noopener" title="Cerca su Tannico">↗ Tannico</a>'+
+     '<a class="info" href="https://www.tannico.it/search?q='+encodeURIComponent(s.producer+" "+s.name)+'&options%5Bprefix%5D=last" target="_blank" rel="noopener" title="Cerca su Tannico">↗ Tannico</a>'+
      '</div>';
   if(s.note) h+='<div class="note">'+esc(s.note)+'</div>';
   h+='</div></div>';
@@ -769,6 +771,7 @@ document.addEventListener("click",function(ev){
     s.rating=(s.rating===v)?0:v; tocca(s,true); render(); return;
   }
   if(a==="usamedia"){ var md=mediaBevute(s); if(md){ s.rating=Math.max(1,Math.round(md.m)); tocca(s,true); render() } return }
+  if(a==="foto"){ if(!connesso()){ toast("Devi essere collegato"); return } fotoPer=s.id; document.getElementById("fFoto").value=""; document.getElementById("fFoto").click(); return }
   if(a==="piu"){ s.qty=(s.qty||0)+1; tocca(s,true); render(); return }
   if(a==="meno"){ if(s.qty>0){ s.qty--; tocca(s,true); render() } return }
   if(a==="bevuto"){ s.openBev=!s.openBev; votoNuova[s.id]=0; render(); return }
@@ -818,6 +821,48 @@ document.addEventListener("change",function(ev){
   else s[f]=v.trim();
   tocca(s,true);
   clearTimeout(window.__rt); window.__rt=setTimeout(render,150);
+});
+
+/* ---- foto dell'etichetta: scattata o scelta dalla galleria, ridotta sul
+   dispositivo e caricata nello spazio Supabase, in una cartella per utente.
+   La scheda ne conserva solo l'indirizzo pubblico. ---- */
+var fotoPer=null;
+function userId(){
+  try{ var p=JSON.parse(atob(sess.access_token.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))); return p.sub||"" }catch(e){ return "" }
+}
+function riduci(file,max){
+  return new Promise(function(res,rej){
+    var url=URL.createObjectURL(file), im=new Image();
+    im.onload=function(){
+      var w=im.naturalWidth, h=im.naturalHeight, k=Math.min(1,max/Math.max(w,h));
+      var c=document.createElement("canvas"); c.width=Math.round(w*k); c.height=Math.round(h*k);
+      c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(function(b){ b?res(b):rej(new Error("conversione")) },"image/jpeg",.82);
+    };
+    im.onerror=function(){ URL.revokeObjectURL(url); rej(new Error("immagine non leggibile")) };
+    im.src=url;
+  });
+}
+function caricaFoto(s,blob){
+  var uid=userId(); if(!uid) return Promise.reject(new Error("sessione"));
+  var path=uid+"/"+s.id+"-"+Date.now().toString(36)+".jpg";
+  return fetch(SB_URL+"/storage/v1/object/etichette/"+path,{ method:"POST", body:blob,
+      headers:{ apikey:SB_KEY, Authorization:"Bearer "+sess.access_token, "Content-Type":"image/jpeg", "x-upsert":"true" } })
+    .then(function(r){ if(r.status===401) return refreshSess().then(function(){ return caricaFoto(s,blob) });
+      if(!r.ok) return r.text().then(function(x){ throw new Error(x.slice(0,120)) });
+      // la foto precedente, se era nostra, si cancella per non occupare spazio
+      var vecchia=(s.img||"").split("/storage/v1/object/public/etichette/")[1];
+      if(vecchia) fetch(SB_URL+"/storage/v1/object/etichette/"+vecchia,{method:"DELETE",headers:{apikey:SB_KEY,Authorization:"Bearer "+sess.access_token}}).catch(function(){});
+      return SB_URL+"/storage/v1/object/public/etichette/"+path;
+    });
+}
+document.getElementById("fFoto").addEventListener("change",function(){
+  var f=this.files[0], s=find(fotoPer); if(!f||!s) return;
+  toast("Carico la foto…");
+  riduci(f,900).then(function(b){ return caricaFoto(s,b) }).then(function(url){
+    s.img=url; tocca(s,true); render(); toast("Foto impostata");
+  }).catch(function(e){ toast("Foto non caricata: "+(/Bucket not found|not found/i.test(e.message)?"spazio 'etichette' non ancora creato su Supabase":e.message)) });
 });
 
 /* ============ aggiunta ============ */
