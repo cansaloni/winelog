@@ -371,9 +371,10 @@
 <footer style="padding:4px 14px 70px; color:#8f7680; font-size:11.5px; line-height:1.6">
   Archivio vini: <a href="https://github.com/rogerioxavier/X-Wines" target="_blank" rel="noopener" style="color:#8f7680">X-Wines</a>
   (de Azambuja, Morais, Filipe 2023 — CC0); codici a barre da
-  <a href="https://it.openfoodfacts.org/" target="_blank" rel="noopener" style="color:#8f7680">Open Food Facts</a> (ODbL).<br>
+  <a href="https://it.openfoodfacts.org/" target="_blank" rel="noopener" style="color:#8f7680">Open Food Facts</a> (ODbL);
+  le etichette sullo sfondo sono foto degli utenti di Open Food Facts (CC BY-SA).<br>
   Segnalazioni e suggerimenti: <span class="posta"></span>
-  · <span title="Serve a capire se un dispositivo sta usando una versione vecchia">versione del 11 novembre 2026 · b</span>
+  · <span title="Serve a capire se un dispositivo sta usando una versione vecchia">versione del 11 novembre 2026 · c</span>
 </footer>
 
 <div class="ov" id="ovAdd">
@@ -650,17 +651,29 @@ function vetrina(){
   document.querySelector(".tools").style.display=vuoto?"none":"";
 }
 
-/* sfondo: niente archivio di etichette libero, quindi tessere nei colori del
-   vino, disposte come le copertine degli altri siti */
-function collage(){
-  if(collage._fatto) return; collage._fatto=true;
-  var box=document.getElementById("collage"), h="", pal=["#5a1020","#7a1a30","#3b0d1a","#8c5a1a","#b8972e","#6b2a3a","#2f1a22","#9b4a5a","#a98a3a","#4a1a2a"];
+/* sfondo: etichette di vini italiani fotografate dagli utenti di Open Food
+   Facts (licenza aperta, attribuzione nel piè di pagina); pagina diversa a
+   ogni apertura. Se l'archivio non risponde restano le tessere colorate. */
+function tessere(){
+  var h="", pal=["#5a1020","#7a1a30","#3b0d1a","#8c5a1a","#b8972e","#6b2a3a","#2f1a22","#9b4a5a","#a98a3a","#4a1a2a"];
   for(var i=0;i<40;i++){
     var c1=pal[Math.floor(Math.random()*pal.length)], c2=pal[Math.floor(Math.random()*pal.length)];
     h+='<div class="tile" style="background:linear-gradient('+(120+Math.floor(Math.random()*120))+'deg,'+c1+','+c2+')"></div>';
   }
-  box.innerHTML=h;
-  requestAnimationFrame(function(){ box.classList.add("on") });
+  return h;
+}
+function collage(){
+  if(collage._fatto) return; collage._fatto=true;
+  var box=document.getElementById("collage");
+  box.innerHTML=tessere(); requestAnimationFrame(function(){ box.classList.add("on") });
+  var pagina=1+Math.floor(Math.random()*30);
+  fetch("https://world.openfoodfacts.org/api/v2/search?categories_tags_en=wines&countries_tags_en=italy&fields=image_front_small_url&page_size=40&page="+pagina)
+    .then(function(r){ return r.ok?r.json():{} })
+    .then(function(j){
+      var img=(j.products||[]).map(function(p){ return p.image_front_small_url }).filter(Boolean);
+      if(img.length<12) return;
+      box.innerHTML=img.map(function(u){ return '<img src="'+esc(u)+'" alt="" loading="lazy" decoding="async" onerror="this.remove()">' }).join("");
+    }).catch(function(){});
 }
 
 document.getElementById("tabBar").addEventListener("click",function(e){
