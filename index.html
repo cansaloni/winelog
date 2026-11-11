@@ -372,9 +372,9 @@
   Archivio vini: <a href="https://github.com/rogerioxavier/X-Wines" target="_blank" rel="noopener" style="color:#8f7680">X-Wines</a>
   (de Azambuja, Morais, Filipe 2023 — CC0); codici a barre da
   <a href="https://it.openfoodfacts.org/" target="_blank" rel="noopener" style="color:#8f7680">Open Food Facts</a> (ODbL);
-  le etichette sullo sfondo sono foto degli utenti di Open Food Facts (CC BY-SA).<br>
+  le bottiglie sullo sfondo sono foto da <a href="https://commons.wikimedia.org/" target="_blank" rel="noopener" style="color:#8f7680">Wikimedia Commons</a> (CC BY / CC BY-SA).<br>
   Segnalazioni e suggerimenti: <span class="posta"></span>
-  · <span title="Serve a capire se un dispositivo sta usando una versione vecchia">versione del 11 novembre 2026 · c</span>
+  · <span title="Serve a capire se un dispositivo sta usando una versione vecchia">versione del 11 novembre 2026 · d</span>
 </footer>
 
 <div class="ov" id="ovAdd">
@@ -651,9 +651,10 @@ function vetrina(){
   document.querySelector(".tools").style.display=vuoto?"none":"";
 }
 
-/* sfondo: etichette di vini italiani fotografate dagli utenti di Open Food
-   Facts (licenza aperta, attribuzione nel piè di pagina); pagina diversa a
-   ogni apertura. Se l'archivio non risponde restano le tessere colorate. */
+/* sfondo: bottiglie ed etichette italiane fotografate dagli utenti di
+   Wikimedia Commons (licenze libere, attribuzione nel piè di pagina), in
+   ordine casuale a ogni apertura. Se non arrivano restano le tessere colorate. */
+var ETICHETTE=["6/65/Bottiglia_e_calice_di_franciacorta.JPG", "e/eb/Cinque_Terre_white_wine.jpg", "1/10/Capezzana_carmignano_1925.jpg", "5/57/Cir%C3%B2_rosso_wine_and_bottle_2.jpg", "b/b8/A_2005_Sella_%26_Mosca_Cannonau_Di_Sardegna_Reserve.jpg", "1/11/Corvina_veronese_IGT_Veneto_3682.jpg", "2/2e/2008_Achelo_Cortona_Syrah_from_La_Braccesca_%288338311478%29.jpg", "8/8d/2010_Malenchini_Chianti_Colli_Fiorentini_%288130772525%29.jpg", "d/d3/2008_Tenute_Sella_%26_Mosca_Cannonau_di_Sardegna_Riserva_%288130802114%29.jpg", "5/56/Capetta_Moscato_dolce_%286806534532%29.jpg", "a/a6/2009_Riserva_Jerzu_Antichi_Poderi_Canonau_di_Sardegna_D.O.C._%285946944764%29.jpg", "c/c3/2009_Bardolino_Masi_from_Frescaripa_%285946384123%29.jpg", "e/e5/2008_Anzenas_Cannonau_di_Sardegna_D.O.C._by_San_Pantaleo_%285479601834%29.jpg", "b/ba/2008_Contrada_Monte_Salento_Primitivo_I.G.T._%285478997581%29.jpg", "e/e6/2008_Sasseo_Primitivo_Salento_I.G.T._Masseria_Altemura_%285478992075%29.jpg", "9/9a/2006_Azienda_Agricola_COS_Nero_di_Lupo_%28Nero_dAvola%29%2C_I.G.T.%2C_Sicilia_%285478987055%29.jpg", "8/88/2008_Sella_%26_Mosca_Cannonau_di_Sardegna_D.O.C._%285360426224%29.jpg", "f/f9/2006_Colli_DellEtruria_Centrale_Fattoria_di_Poggio_Capponi_Vin_Santo%2C_D.O.C._from_Montespertoli%2C_Italia_%285027217138%29.jpg", "1/1b/2007_Corvo_rosso_from_Sicilia_%284754682802%29.jpg", "4/46/Barone_di_Valforte.JPG", "f/f6/2009_Planeta_La_Segreta_Sicilia_IGT_%2815495817489%29.jpg", "2/22/2010_Piccini_Cabernet_Sicilia_IGT_%2815496499757%29.jpg", "b/b9/%22_15_-_ITALY_-_Red_wine_bottle_Refosco_DOC.jpg", "6/6b/Colli_pesaresi_sangiovese_%28cropped%29.jpg", "b/bf/Amarone_sartori.jpg", "4/41/Albana_wine.jpg", "1/1a/Franciacorta_milledi.jpg", "2/2c/Frappato_tareni.jpg", "5/59/Fiano_feudo.jpg", "3/3f/Cerasuolo_agronika.jpg", "4/47/Folius%2C_Cantina_del_Taburno_-_Falanghina_spumante_extra_dry.jpg", "7/7a/Bottiglie_Vini_Raimondo_Cesanese_di_Affile_DOC_2003.jpg", "7/79/Barolo_1958.jpg", "4/43/Barolo_1930_-_bottle.jpg", "6/6b/Fontanafredda_Barolo_Serralunga_d%E2%80%99Alba.jpg", "a/ae/Barolo_in_Piemonte%2C_Italy.jpg", "0/07/Degustazione_di_Barolo_all%27Enoteca_regionale.jpg", "0/0f/Conterno_barolo_cigalo.jpeg", "a/a9/FineWine_%283078406652%29.jpg", "8/84/FineWine_%283077573535%29.jpg"];
 function tessere(){
   var h="", pal=["#5a1020","#7a1a30","#3b0d1a","#8c5a1a","#b8972e","#6b2a3a","#2f1a22","#9b4a5a","#a98a3a","#4a1a2a"];
   for(var i=0;i<40;i++){
@@ -664,16 +665,13 @@ function tessere(){
 }
 function collage(){
   if(collage._fatto) return; collage._fatto=true;
-  var box=document.getElementById("collage");
-  box.innerHTML=tessere(); requestAnimationFrame(function(){ box.classList.add("on") });
-  var pagina=1+Math.floor(Math.random()*30);
-  fetch("https://world.openfoodfacts.org/api/v2/search?categories_tags_en=wines&countries_tags_en=italy&fields=image_front_small_url&page_size=40&page="+pagina)
-    .then(function(r){ return r.ok?r.json():{} })
-    .then(function(j){
-      var img=(j.products||[]).map(function(p){ return p.image_front_small_url }).filter(Boolean);
-      if(img.length<12) return;
-      box.innerHTML=img.map(function(u){ return '<img src="'+esc(u)+'" alt="" loading="lazy" decoding="async" onerror="this.remove()">' }).join("");
-    }).catch(function(){});
+  var box=document.getElementById("collage"), f=ETICHETTE.slice();
+  for(var i=f.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), x=f[i]; f[i]=f[j]; f[j]=x }
+  box.innerHTML=f.map(function(p){
+    var nome=p.split("/").pop();
+    return '<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/'+p+'/330px-'+nome+'" alt="" loading="lazy" decoding="async" onerror="this.remove()">';
+  }).join("");
+  requestAnimationFrame(function(){ box.classList.add("on") });
 }
 
 document.getElementById("tabBar").addEventListener("click",function(e){
